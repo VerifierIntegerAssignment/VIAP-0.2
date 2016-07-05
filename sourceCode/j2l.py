@@ -1572,8 +1572,10 @@ Test Case 4
 def solve_rec(e1,e2):
 	lefthandstmt=None
 	righthandstmt=None
+	righthandstmt_d=None
 	lefthandstmt_base=None
 	righthandstmt_base=None
+	righthandstmt_base_d=None
 	variable=None
 	closed_form_soln=None
 	if e1[0]=='i1':
@@ -1600,6 +1602,8 @@ def solve_rec(e1,e2):
 		lefthandstmt_base=simplify(lefthandstmt_base)
 		righthandstmt_base=simplify(righthandstmt_base)
 	if variable is not None and lefthandstmt is not None and righthandstmt is not None and lefthandstmt_base is not None and righthandstmt_base is not None:
+		righthandstmt_d=righthandstmt
+		righthandstmt_base_d=righthandstmt_base
 		term1=lefthandstmt.subs(str(variable)+"+1","0")
 		term2=lefthandstmt.subs(str(variable)+"+1",variable)
 		if term1==lefthandstmt_base and  str(term2) in str(righthandstmt):
@@ -1616,12 +1620,14 @@ def solve_rec(e1,e2):
 				result=None
 			if result is not None:
 				result=substituteValue(simplify_sympy(result),simplify('n'),simplify(variable))
+				writeLogFile( "j2llogs.logs" , "\nOriginal Axoims \n"+str(lefthandstmt)+"="+str(righthandstmt_d)+","+str(lefthandstmt_base)+"="+str(righthandstmt_base_d)+"\n Closed Form Solution\n"+str(result)+"\n" )
 				if "**" in str(result):
 					result=translatepowerToFun(str(result))
 				expression=str(str(term2)+"="+str(result))
 				p = getParser()
 				tree = p.parse_expression(expression)
 				closed_form_soln=construct_expression(tree,e1[1],e1[2])
+			
 	return closed_form_soln
 
 
@@ -3369,6 +3375,10 @@ def prove(file_name,pre_condition,post_condition,flag):
 	p = getParser()
 	#tree = p.parse_file("Utils7.java")
 	tree = p.parse_file(file_name)
+	if flag==1:
+		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n File Name--"+file_name+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
+	elif flag==2:
+		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n File Name--"+file_name+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
 	if tree is None:
 		print "Error present in code. Please verify you input file"
 		return
@@ -3481,6 +3491,7 @@ def prove(file_name,pre_condition,post_condition,flag):
 			end_time=current_milli_time()
 			print "Times to Get Result"
                 	print end_time-start_time
+                writeLogFile( "j2llogs.logs" , getTimeStamp()+"\n End of Proof\n")
               
 
 
@@ -3528,11 +3539,11 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 		pythonProgram+="_s.add("+str(equation)+")\n"
 	finalProgram=pythonProgram
 	finalProgram+="_s.add(Not("+str(translatepowerToFun(conclusion))+"))\n"
-	finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tif os.path.isfile(\'j2llogs.logs\'):\n"+"\t\tfile = open(\'j2llogs.logs\', \'a\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof())+\"\\n\")\n"+"\t\tfile.close()\n"+"\telse:\n"+"\t\tfile = open(\'j2llogs.logs\', \'w\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof())+\"\\n\")\n"+"\t\tfile.close()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
+	finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tif os.path.isfile(\'j2llogs.logs\'):\n"+"\t\tfile = open(\'j2llogs.logs\', \'a\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\telse:\n"+"\t\tfile = open(\'j2llogs.logs\', \'w\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#print finalProgram
 	writtingFile( "z3query.py" , finalProgram )
-	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nQuery to z3 \n"+str(finalProgram)+"\n" )
+	writeLogFile( "j2llogs.logs" , "\nQuery to z3 \n"+str(finalProgram)+"\n" )
 	proc = subprocess.Popen('python z3query.py', stdout=subprocess.PIPE,shell=True)
 	output = proc.stdout.read()
 	status=output
@@ -3562,7 +3573,7 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 	for x in pre_condition:
         	constraint_list.append(x)
 	for conclusion in conclusions:
-		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nSystem try to prove \n"+str(conclusion)+"\n" )
+		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
 		#if '==' not in conclusion:
 		#	conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
 		#else:
@@ -3576,7 +3587,7 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 			vfact.append(cfact)
 		
 		status=query2z3(constraint_list,conclusion,vfact,inputmap)
-		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nResult \n"+str(status)+"\n" )
+		writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
 		if "Successfully Proved" in status:
 			print "Successfully Proved"
 			
@@ -3686,10 +3697,10 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			else:
 				basecasestmt=simplify(invariantstmt).subs(variable,0)
 			print basecasestmt
-			writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nBase Case \n"+str(basecasestmt)+"\n" )
+			writeLogFile( "j2llogs.logs" , "\nBase Case \n"+str(basecasestmt)+"\n" )
 			status=query2z3(constraint_list,str(basecasestmt),update_vfact,inputmap)
 			#status=query2z3(constraint_list,str(basecasestmt),vfact,inputmap)
-			writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nResult \n"+str(status)+"\n" )
+			writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 			if "Successfully Proved" in status:
 				print "Successfully Proved"
 				print "Inductive Step"
@@ -3712,10 +3723,10 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					updated_equation.append(equation)
 				updated_equation.append(variable+">=0")
 				updated_equation.append(inductiveassum)
-				writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nInductive Step \n"+str(inductivestep)+"\n" )
+				writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
 				status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
 				#status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
-				writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nResult \n"+str(status)+"\n" )
+				writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 				if "Successfully Proved" in status:
 					print "Successfully Proved"
 					return 
@@ -3900,7 +3911,7 @@ def recurreSolver_wolframalpha(righthandstmt,righthandstmt_base,variable_list):
     count=1
     #print query1
    
-    
+   
     if is_number(str(righthandstmt_base))==False:
     	if len(str(righthandstmt_base))>1:
     		var=righthandstmt_base
@@ -3947,8 +3958,8 @@ def recurreSolver_wolframalpha(righthandstmt,righthandstmt_base,variable_list):
 	    	try:
 
 	    		finalResult=str(simplify_expand_sympy(results[1]))
-	    		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nTry to find close form solution--using Wolfram Mathematica \n"+str(query1)+"------Base Case---"+str(query2)+"\n" )
-	    		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nClose form solution\n"+str(finalResult)+"\n" )
+	    		writeLogFile( "j2llogs.logs" , "\nEquation Pass to Wolfram Mathematica  \n"+str(query1)+"------Base Case---"+str(query2)+"\n" )
+	    		writeLogFile( "j2llogs.logs" , "\nClosed form solution return by Wolfram Mathematica \n"+str(finalResult)+"\n" )
 	    	except ValueError:
 			finalResult=None
 			#writeLogFile( "j2llogs.logs" , "\nFailed to find close form solution\n" )
@@ -3982,8 +3993,8 @@ def recurreSolver_sympy(righthandstmt,righthandstmt_base):
             	flag=isConstInResult( str(result) )
 		if flag==False and result is not None and 'RisingFactorial' not in str(result) and 'binomial' not in str(result) and 'gamma' not in str(result) and 'rgamma' not in str(result) and 'gammaprod' not in str(result) and 'loggamma' not in str(result) and 'beta' not in str(result) and 'superfac' not in str(result) and 'barnesg' not in str(result):
 			result=simplify(result)
-			writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nTry to find close form solution using sympy\n"+str(expression)+"=0"+"------"+"Base Case--T(0)="+str(righthandstmt_base)+"\n" )
-			writeLogFile( "j2llogs.logs" , getTimeStamp()+"\t\nClose form solution\n"+str(result)+"\n" )
+			writeLogFile( "j2llogs.logs" ,"\nEquation Pass to sympy\n"+str(expression)+"=0"+"------"+"Base Case--T(0)="+str(righthandstmt_base)+"\n" )
+			writeLogFile( "j2llogs.logs" ,"\nClosed form solution return by sympy \n"+str(result)+"\n" )
 		else:
                     result=None
                     #writeLogFile( "j2llogs.logs" , "\nFailed to find close form solution\n" )
