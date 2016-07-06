@@ -2418,6 +2418,36 @@ def getOperatorCmpl(operator):
 		return operator
 
 
+
+"""
+#Axiom Class
+#Plain Python object to store Information about a Axiom
+"""
+class axiomclass(object):
+ 	def __init__(self, frame_axioms , output_equations , other_axioms, inputvariable, vfact, constraints, const_var_map):
+        	self.frame_axioms = frame_axioms
+        	self.output_equations = output_equations
+        	self.other_axioms = other_axioms
+        	self.inputvariable = inputvariable
+        	self.vfact = vfact
+        	self.constraints = constraints
+        	self.const_var_map = const_var_map
+        def getFrame_axioms(self):
+        	return self.frame_axioms
+        def getOutput_equations(self):
+        	return self.output_equations
+        def getOther_axioms(self):
+        	return self.other_axioms
+        def getInputvariable(self):
+        	return self.inputvariable
+        def getVfact(self):
+        	return self.vfact
+        def getConstraints(self):
+        	return self.constraints
+        def getConst_var_map(self):
+        	return self.const_var_map
+
+
 """
 #Sort Class
 #Plain Python object to store Information about a Java  Class 
@@ -3219,166 +3249,24 @@ flag=2
 
 #file_name='sqrt.java'
 
+#file_name='benchmark/cohendiv.java'
+
+#axiom=translate(file_name)
+
 """
   
 def translate(file_name):
 	if not(os.path.exists(file_name)): 
 		print "File not exits"
 		return
-	p = getParser()
-	tree = p.parse_file(file_name)
-	sort=None
-	if tree is None:
-		print "Error present in code. Please verify you input file"
-		return
-	for type_decl in tree.type_declarations:
-                #sort=sortclass(type_decl.name)
-                #print type_decl.name
-                if type_decl.extends is not None:
-                        print(' -> extending ' + type_decl.extends.name.value)
-                menbermap={}
-                menbermethods=[]
-                returnType=None
-                for field_decl in [decl for decl in type_decl.body if type(decl) is m.FieldDeclaration]:
-                        for var_decl in field_decl.variable_declarators:
-                                if type(field_decl.type) is str:
-                                        type_name = field_decl.type
-                                else:
-                                        type_name = field_decl.type.name.value
-                                menbermap[var_decl.variable.name]=type_name
-                for method_decl in [decl for decl in type_decl.body if type(decl) is m.MethodDeclaration]:
-                        parametermap={}
-                        returnType=None
-                        localvarmap={}
-                        statements=[]
-                        if type(method_decl.return_type) is str:
-                                returnType=method_decl.return_type
-                        else:
-                                returnType=method_decl.return_type.name.value
-                        
-                        for param in method_decl.parameters:
-                                if type(param.type) is str:
-                                        parametermap[param.variable.name]=param.type
-                                else:
-                                        parametermap[param.type.name.value]=param.type
-                        if method_decl.body is not None:
-                                for statement in method_decl.body:
-                                # note that this misses variables in inner blocks such as for loops
-                                # see symbols_visitor.py for a better way of handling this
-                                        if type(statement) is m.VariableDeclaration:
-                                                for var_decl in statement.variable_declarators:
-                                                        if type(statement.type) is str:
-                                                                type_name = statement.type
-                                                        else:
-                                                                type_name = statement.type.name.value
-                                                        localvarmap[var_decl.variable.name]=type_name
-                                        else:
-                                        	statements.append(statement)
-                        membermethod=membermethodclass(method_decl.name,returnType,parametermap,localvarmap)
-                        menbermethods.append(membermethod)
-                allvariable={}
-                sort=sortclass(type_decl.name, menbermap)
-                if sort is not None:
-			print " Class Name:"
-			print sort.getSortname()
-			print " Class Variables:"
-			print sort.getVarmap()
-			for membermethod in menbermethods:
-				print "Method Name:"
-		        	print membermethod.getMethodname()
-		        	print "Return Type:"
-		                print membermethod.getreturnType()
-		                print "Input Variables:"
-		                print membermethod.getInputvar()
-		                print "Local Variables:"
-                                print membermethod.getLocalvar()
-                                for x in membermethod.getInputvar():
-                                	allvariable[x]=membermethod.getInputvar()[x]
-                                for x in membermethod.getLocalvar():
-                                	allvariable[x]=membermethod.getLocalvar()[x]
-                if validationOfInput(allvariable)==True:
-          		print "Please Rename variable Name {S,Q} to other Name"
-          		return                	
-                print "All Variables:"
-                print allvariable
-                expressions=organizeStatementToObject(statements)
-                primeStatement(expressions)
-                variablesarray={}
-                opvariablesarray={}
-                count=0
-                for variable in allvariable:
-                	count+=1
-                	variablesarray[variable]=eval("['_y"+str(count)+"','"+allvariable[variable]+"']")
-                	opvariablesarray[variable+"1"]=eval("['_y"+str(count)+"','"+allvariable[variable]+"']")
-                program=eval(programToinductiveDefination(expressions , allvariable))
-                print ""
-                print "Output of The Translator Written By Prof Lin"
-                print ""
-                print "Inputs to Translator"
-                print "Parameter One:"
-                print program
-                print "Parameter Two:"
-                print variablesarray
-                print "Parameter Two Three:"
-                print 1             
-                f,o,a,cm=translate1(program,variablesarray,1)
-
-
- 
-"""
-Prove command used to prove post condition of a program 
-#Input 1--source code file name(file_name) 
-#Input 2--precondition for program to prove (pre_condition) 
-#Input 3--postcondition of program (post_condition) 
-#Input 4--Flag to choose strategy used to prove  post condition using z3(flag) 
-	#flag=1 represent the strategy in which system will directly translate program and pass to z3 to prove conclusion (waiting times for result 6000 ms)
-	#flag=2 represent the strategy in which system will directly translate program and change all the occurrences  of power operator by power function and pass to z3 to prove conclusion
-	#flag=3 represent the strategy in which system simplify each translate equation and conlusion by using sympy and pass to z3 to prove conclusion
-	#flag=4 represent the strategy in which system will directly translate program and pass to z3 to prove conclusion using tactic 'qfnra-nlsat'
-
-file_name='Utils7.java'
-pre_condition=['a>0']
-post_condition=['a>0']
-flag=1
-#Test Case -- prove(file_name,pre_condition,post_condition,flag)
-file_name='sample.java'
-pre_condition=['a>0']
-post_condition=['z1==2*a+5']
-flag=1
-
-file_name='sample2.java'
-pre_condition=['a>0']
-post_condition=['a>0']
-flag=1
-
-
-file_name='benchmark/cohendiv.java'
-pre_condition=['X>0']
-post_condition=['X>0']
-flag=1
-
-
-"""
-
-
-def prove(file_name,pre_condition,post_condition,flag):
-	if not(os.path.exists(file_name)): 
-		print "File not exits"
-		return
 	if len(post_condition)==0:
 		print "Nothing To Prove"
-		return
-	if flag<0 or flag>2:
-		print "Invalid Flag"
 		return
 	start_time=current_milli_time()
 	p = getParser()
 	#tree = p.parse_file("Utils7.java")
 	tree = p.parse_file(file_name)
-	if flag==1:
-		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n File Name--"+file_name+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
-	elif flag==2:
-		writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n File Name--"+file_name+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
+	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Translate \n"+"\nParameters--\n File Name--"+file_name+"\n")
 	if tree is None:
 		print "Error present in code. Please verify you input file"
 		return
@@ -3475,19 +3363,69 @@ def prove(file_name,pre_condition,post_condition,flag):
                 print "Parameter Two Three:"
                 print 1             
                 f,o,a,cm=translate1(program,variablesarray,1)
-                vfacts,constaints=getVariFunDetails(f,o,a,allvariable,opvariablesarray)
+                vfacts,constraints=getVariFunDetails(f,o,a,allvariable,opvariablesarray)
                 end_time=current_milli_time()
                 print "Times to Translate"
                 print end_time-start_time
-                if flag==1:
+                writeLogFile( "j2llogs.logs" , getTimeStamp()+"\n End of Translation\n")
+                axiom=axiomclass(f,o,a,membermethod.getInputvar(), vfacts, constraints,cm)
+                return axiom
+
+ 
+"""
+Prove command used to prove post condition of a program 
+#Input 1--source code file name(file_name) 
+#Input 2--precondition for program to prove (pre_condition) 
+#Input 3--postcondition of program (post_condition) 
+#Input 4--Flag to choose strategy used to prove  post condition using z3(flag) 
+	#flag=1 represent the strategy in which system will directly translate program and pass to z3 to prove conclusion (waiting times for result 6000 ms)
+	#flag=2 represent the strategy in which system will directly translate program and change all the occurrences  of power operator by power function and pass to z3 to prove conclusion
+	#flag=3 represent the strategy in which system simplify each translate equation and conlusion by using sympy and pass to z3 to prove conclusion
+	#flag=4 represent the strategy in which system will directly translate program and pass to z3 to prove conclusion using tactic 'qfnra-nlsat'
+
+file_name='Utils7.java'
+pre_condition=['a>0']
+post_condition=['a>0']
+flag=1
+#Test Case -- prove(file_name,pre_condition,post_condition,flag)
+file_name='sample.java'
+pre_condition=['a>0']
+post_condition=['z1==2*a+5']
+flag=1
+
+file_name='sample2.java'
+pre_condition=['a>0']
+post_condition=['a>0']
+flag=1
+
+
+file_name='benchmark/cohendiv.java'
+pre_condition=['X>0']
+post_condition=['X>0']
+flag=1
+
+
+pre_condition=['X>=0','Y>0']
+post_condition=['X==Y*q1+r1']
+flag=2
+prove(axiom,pre_condition,post_condition,flag)
+
+"""
+
+
+def prove(axiom,pre_condition,post_condition,flag):
+	if axiom is not None and post_condition is not None and flag>0 and flag<3:
+	        if flag==1:
+	        	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
                 	start_time=current_milli_time()
-                	tactic1(f,o,a,pre_condition,post_condition,vfacts,membermethod.getInputvar(),constaints)
+                	tactic1(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints())
                 	end_time=current_milli_time()
                 	print "Times to Get Result"
                 	print end_time-start_time
                 elif flag==2:
+                	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
                 	start_time=current_milli_time()
-			tactic2(f,o,a,pre_condition,post_condition,vfacts,membermethod.getInputvar(),constaints,cm)
+			tactic2(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),axiom.getConst_var_map())
 			end_time=current_milli_time()
 			print "Times to Get Result"
                 	print end_time-start_time
@@ -3558,6 +3496,7 @@ Tactic 1  ----> 1.Directly translate axoimes to z3 constraint 2.try to prove con
 
 """
 def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
+
 	constraint_list=[]
 	frame_axioms=eqset2constraintlist(f)
 	for x in frame_axioms:
@@ -3775,6 +3714,47 @@ def validationOfInput(allvariable):
 		if variable=='S' or variable=='Q':
 			return True
 	return False
+
+
+"""
+
+Function Display Axioms
+
+"""
+
+def displayAxioms(axiom):
+	if axiom is not None:
+	    print('1. Frame axioms:')
+	    eqset2string1(axiom.getFrame_axioms())
+	    print('\n2. Output equations:')
+	    eqset2string1(axiom.getOutput_equations())
+	    print('\n3. Other axioms:')
+	    for x in axiom.getOther_axioms(): 
+            	print wff2string1(x)
+            
+
+"""
+
+Function Display Vfact
+
+"""
+
+def displayVfact(axiom):
+	if axiom is not None:
+	    print axiom.getVfact()
+	    
+	   
+"""
+
+Function Display Input Variable
+
+"""
+
+def displayInputVariables(axiom):
+	if axiom is not None:
+	    print axiom.getInputvariable()
+
+
 
 """
 #Test Case 1
