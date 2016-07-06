@@ -3259,9 +3259,7 @@ def translate(file_name):
 	if not(os.path.exists(file_name)): 
 		print "File not exits"
 		return
-	if len(post_condition)==0:
-		print "Nothing To Prove"
-		return
+
 	start_time=current_milli_time()
 	p = getParser()
 	#tree = p.parse_file("Utils7.java")
@@ -3414,6 +3412,9 @@ prove(axiom,pre_condition,post_condition,flag)
 
 
 def prove(axiom,pre_condition,post_condition,flag):
+	if len(post_condition)==0:
+		print "Nothing To Prove"
+		return
 	if axiom is not None and post_condition is not None and flag>0 and flag<3:
 	        if flag==1:
 	        	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
