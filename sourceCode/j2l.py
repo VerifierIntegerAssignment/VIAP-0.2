@@ -154,7 +154,17 @@ def expr2z3(e,var_cstr_map):
         elif op=='not' and len(args)==1:
             return 'not '+expr2z3(args[0],var_cstr_map)
         elif op=='implies' and len(args)==2:
-            return 'Implies('+expr2z3(args[0],var_cstr_map)+ ','+expr2z3(args[1],var_cstr_map)+')'
+            
+            if len(var_cstr_map)==0:
+            	return 'Implies('+expr2z3(args[0],var_cstr_map)+ ','+expr2z3(args[1],var_cstr_map)+')'
+            else:
+            	list_constrn=""
+                for x in var_cstr_map:
+            		if list_constrn=="":
+            			list_constrn="And("+expr2z3(args[0],var_cstr_map)+","+var_cstr_map[x]+")"
+            		else:
+            			list_constrn="And("+list_constrn+","+var_cstr_map[x]+")"
+            	return 'Implies('+list_constrn+ ','+expr2z3(args[1],var_cstr_map)+')'
         elif op in _infix_op and len(args)==2:
             return '(' + expr2z3(args[0],var_cstr_map)+ op+expr2z3(args[1],var_cstr_map)+')'
         else:
@@ -407,11 +417,11 @@ def wff2z3(w):
             if list_var_str is not None and list_cstr_str is not None:
                 if 'Implies' in expression:
                     arg_list=extract_args(expression)
-                    #return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
-                    return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
+                    #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
                 else:
-                    #return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
-                    return 'ForAll(['+list_var_str+'],'+expression+')'
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
             else:
                 return expression
   
@@ -435,10 +445,11 @@ def wff2z3Ins(w,vm):
             rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
             if list_var_str is not None and list_cstr_str is not None:
             	if w[0] == 'i1':
-                	#return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
-                	return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+                	return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
+                	#return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
                 else:
-                	return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+                	return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
+                	#return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
             else:
                 return lhs+' == '+ rhs
         elif w[0] == 'd0': # Bi-implications are represented using equality == in z3py
@@ -456,8 +467,8 @@ def wff2z3Ins(w,vm):
             lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
             rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
             if list_var_str is not None and list_cstr_str is not None:
-                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))"
-                return 'ForAll(['+list_var_str+'],'+lhs+'=0 == '+ rhs+")"
+                return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))"
+                #return 'ForAll(['+list_var_str+'],'+lhs+'=0 == '+ rhs+")"
             else:
                 return lhs+'=0 == '+ rhs
         elif w[0] == 'd1': # Bi-implications are represented using equality == in z3py
@@ -475,8 +486,8 @@ def wff2z3Ins(w,vm):
             lhs=convert_pow_op_fun(simplify_expand_sympy(w[1]+'+1'))
             rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
             if list_var_str is not None and list_cstr_str is not None:
-                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))"
-                return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
+                return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))"
+                #return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
             else:
                 return lhs+' == '+rhs
         elif w[0]=='a':
@@ -493,13 +504,134 @@ def wff2z3Ins(w,vm):
             if list_var_str is not None and list_cstr_str is not None:
                 if 'Implies' in expression:
                     arg_list=extract_args(expression)
-                    #return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
-                    return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
+                    #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
                 else:
-                    #return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
-                    return 'ForAll(['+list_var_str+'],'+expression+')'
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
             else:
                 return expression
+
+
+
+#convert wff to z3 constraint
+def wff2z3InsExpand(w,vm):
+	
+        if w[0] == 'e' or w[0] == 'i0' or w[0] == 'i1':
+            var_cstr_map={}
+            equations=[]
+            lhs=expr2z3(w[-2],var_cstr_map)
+            rhs=expr2z3(w[-1],var_cstr_map)
+            lhs_org=lhs
+            rhs_org=rhs
+            for x in vm.keys():
+            	if x in var_cstr_map.keys():
+            		del var_cstr_map[x]
+            for x in vm:
+            	lhs=lhs.replace(x,vm[x])
+            	rhs=rhs.replace(x,vm[x])
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+            	if w[0] == 'i1':
+                	#return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
+                	#'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+                	equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))") 
+			for i in range(0,int(vm[x])):
+				lhs1=lhs_org.replace(x,str(i))
+				rhs1=rhs_org.replace(x,str(i))         	
+            			equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs1+' == '+ rhs1+"))")  
+                	return equations
+                else:
+                  	equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))") 
+                	return equations
+            else:
+            	if w[0] == 'i1':
+                	equations.append(lhs+' == '+ rhs) 
+            		for i in range(0,int(vm[x])):
+            			lhs1=lhs_org.replace(x,str(i))
+            			rhs1=rhs_org.replace(x,str(i))         	
+            			equations.append(lhs1+' == '+ rhs1)            		 
+                	return equations
+                else:
+                	equations.append(lhs+' == '+ rhs) 
+                	return equations
+        elif w[0] == 'd0': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+            equations=[]
+	    lhs=expr2z3(w[1],var_cstr_map)
+            rhs=expr2z3(w[2],var_cstr_map)
+            for x in vm.keys():
+	    	if x in var_cstr_map.keys():
+            		del var_cstr_map[x]
+            for x in vm:
+	    	lhs=lhs.replace(x,vm[x])
+            	rhs=rhs.replace(x,vm[x])
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))"
+                #return 'ForAll(['+list_var_str+'],'+lhs+'=0 == '+ rhs+")"
+                equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))")
+                return equations
+            else:
+            	equations.append(lhs+'=0 == '+ rhs)
+                return equations
+        elif w[0] == 'd1': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+            equations=[]
+	    lhs=expr2z3(w[2],var_cstr_map)
+            rhs=expr2z3(w[3],var_cstr_map)
+            for x in vm.keys():
+	    	if x in var_cstr_map.keys():
+            		del var_cstr_map[x]
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            for x in vm:
+	    	lhs=lhs.replace(x,vm[x])
+            	rhs=rhs.replace(x,vm[x])
+            lhs=convert_pow_op_fun(simplify_expand_sympy(w[1]+'+1'))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))"
+                equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))")
+                return equations
+            else:
+                equations.append(lhs+' == '+rhs)
+                return equations
+        elif w[0]=='a':
+            var_cstr_map={}
+            equations=[]
+	    expression=expr2z3(w[1],var_cstr_map)
+	    for x in vm.keys():
+	    	if x in var_cstr_map.keys():
+            		del var_cstr_map[x]
+	    for x in vm:
+	    	expression=expression.replace(x,vm[x])
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    #return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
+                    #'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    equations.append('ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))')
+                    return equations
+                else:
+                    #return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
+                    equations.append('ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))')
+                    return equations
+                   
+            else:
+            	equations=[]
+            	equations.append(expression)
+                return equations
 
 
 
@@ -1698,7 +1830,8 @@ def simplify_expand_sympy(expression):
     	return str(simplify_sympy(expression))
     elif 'Implies' in expression :
         axioms=extract_args(expression)
-        return 'Implies('+simplify_expand_sympy(axioms[0])+','+simplify_expand_sympy(axioms[1])+')'
+        #return 'Implies('+simplify_expand_sympy(axioms[0])+','+simplify_expand_sympy(axioms[1])+')'
+        return 'Implies('+axioms[0]+','+simplify_expand_sympy(axioms[1])+')'
     elif 'ite' in expression:
         axioms=extract_args(expression)
         return 'If('+simplify_expand_sympy(axioms[0])+','+simplify_expand_sympy(axioms[1])+','+simplify_expand_sympy(axioms[2])+')'
@@ -2976,6 +3109,67 @@ def expressionCreator(statement):
         	else :
         		expression+=","+expressionCreator(statement.rhs)+"])"
     return expression
+    
+ 
+
+
+"""
+ 
+Program Expression to Collect literal parameters
+ 
+"""
+ 
+def expressionCollectConstant(statement,fun_parameter):
+     expression=""
+     if type(statement) is m.Name:
+     	expression+="expres('"+statement.value+"')"
+     elif type(statement) is m.Literal:
+     	expression+=statement.value
+     elif type(statement) is m.MethodInvocation:
+     	function=""
+     	parameter=""
+     	key=None
+     	if "power"==statement.name:
+		function="['**',"+parameter+"]"
+	else:
+		key=statement.name
+ 		function="['"+statement.name+"',"+parameter+"]"
+     	parameterlist=[]
+     	for argument in statement.arguments:
+     		if parameter=="":
+     			parameter=expressionCollectConstant(argument,fun_parameter)
+     			parameterlist.append(parameter)     				
+     		else:
+     			parameterstr=expressionCollectConstant(argument,fun_parameter)
+     			parameter+=","+expressionCollectConstant(argument,fun_parameter)
+     			parameterlist.append(parameterstr)
+     				
+     	if key is not None:
+     		fun_parameter[key]=parameterlist
+     	expression+=function
+     elif type(statement) is m.Unary:
+     	expression+="['-',"+expressionCollectConstant(statement.expression,fun_parameter)+"]"
+     else:
+     	if type(statement.lhs) is m.Name:
+         	expression+="expres('"+statement.operator+"',[expres('"+statement.lhs.value+"')"
+     	elif type(statement.lhs) is m.Literal:
+     		expression+="expres('"+statement.operator+"',[expres('"+statement.lhs.value+"')"
+     	else:
+         	if type(statement.lhs) is m.Additive:
+             		expression+="expres('"+statement.operator+"',["+expressionCollectConstant(statement.lhs,fun_parameter)
+         	else :
+             		expression+="expres('"+statement.operator+"',["+expressionCollectConstant(statement.lhs,fun_parameter)
+     	if type(statement.rhs) is m.Name:
+         	expression+=",expres('"+statement.rhs.value+"')])"
+     	elif type(statement.rhs) is m.Literal:
+         	expression+=",expres('"+statement.rhs.value+"')])"
+     	else:
+         	if type(statement.rhs) is m.Additive:
+         		expression+=","+expressionCollectConstant(statement.rhs,fun_parameter)+"])"
+         	else :
+         		expression+=","+expressionCollectConstant(statement.rhs,fun_parameter)+"])"
+     return expression
+   
 
 
 	
@@ -3108,7 +3302,7 @@ Convert Program to Logic
   
 def convertToAST():
 	p = getParser()
-	#tree = p.parse_file("lcm2.java")
+	#tree = p.parse_file("lcm2.java")ge
 	#tree = p.parse_file("testp/lcm2.java")
 	#tree = p.parse_file("sqrt.java")
 	#tree = p.parse_file("Utils5.java")
@@ -3415,7 +3609,7 @@ def prove(axiom,pre_condition,post_condition,flag):
 	if len(post_condition)==0:
 		print "Nothing To Prove"
 		return
-	if axiom is not None and post_condition is not None and flag>0 and flag<3:
+	if axiom is not None and post_condition is not None and flag>0 and flag<4:
 	        if flag==1:
 	        	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
                 	start_time=current_milli_time()
@@ -3427,6 +3621,13 @@ def prove(axiom,pre_condition,post_condition,flag):
                 	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
                 	start_time=current_milli_time()
 			tactic2(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),axiom.getConst_var_map())
+			end_time=current_milli_time()
+			print "Times to Get Result"
+                	print end_time-start_time
+                elif flag==3:
+		        writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
+		        start_time=current_milli_time()
+			tactic3(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),axiom.getConst_var_map())
 			end_time=current_milli_time()
 			print "Times to Get Result"
                 	print end_time-start_time
@@ -3678,6 +3879,137 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				print status
 			else:
 				print "Failed to Prove"
+
+
+
+"""
+
+Tactic 3  ----> 1.Directly translate axoimes to z3 constraint 2.try to prove conclusion 3.waited for 6000
+
+"""
+def tactic3(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_map):
+        for conclusion in conclusions:
+        	fun_map1=getCollectConstant(conclusion)
+        	fun_map2={}
+        	parameter_constant_map={}
+        	constraint_list=[]
+		frame_axioms=eqset2constraintlist(f)
+		for x in frame_axioms:
+			constraint_list.append(x)
+		out_axioms=eqset2constraintlist(o)
+		subs_list=eqset2subs_list(o)
+		for x in out_axioms:
+			constraint_list.append(x)
+		for x in a:
+			if x[0]=='i1':
+				key=None
+				parameterlist=[]
+				for i in range(0, len(x[3])):
+					if i==0: 
+						key=x[3][0]
+					else:
+						if len(x[3][i])==1:
+							parameterlist.append(x[3][i])
+						else:
+							parameterlist.append(x[2])
+				if key is not None:
+					fun_map2[key]=parameterlist
+		if len(fun_map2)!=0 and len(fun_map1)!=0:
+			for x in fun_map1:
+				for i in range(0, len(fun_map2[x])):
+					parameter_constant_map[fun_map2[x][i]]=str(int(fun_map1[x][i])-1)
+			for x in a:
+				equations=wff2z3InsExpand(x,parameter_constant_map)
+				for equation in equations:
+					constraint_list.append(equation)	
+			for x in constaints:
+				constraint_list.append(x)
+			for x in pre_condition:
+        			constraint_list.append(x)
+        		conclusion=simplify_conclusion(conclusion,subs_list)	
+			if "factorial" in conclusion:
+				cfact=eval("['factorial',1,['int','int']]")
+				vfact.append(cfact)
+			status=query2z3(constraint_list,conclusion,vfact,inputmap)
+			writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
+			if "Successfully Proved" in status:
+				print "Successfully Proved"					
+			elif "Counter Example" in status:
+				print status
+			else:
+				print "Failed to Prove"
+		else:
+			print "Failed to Prove"
+        	
+
+
+"""
+
+#equation='X==q7(5)*Y+r7(5)'
+
+#equation='r7(5)>=0'
+
+"""
+def getCollectConstant(equation):
+	if equation is not None:
+		fun_parameter={}
+		if '==' in str(equation):
+			polys=str(equation).split('==')
+			polys[0]=polys[0].strip()
+			polys[1]=polys[1].strip()
+			if "**" in str(polys[1]):
+				polys[1]=translatepowerToFun(str(polys[1]))
+			expression=str(str(polys[0])+"="+str(polys[1]))
+			p = getParser()
+			tree = p.parse_expression(expression)
+			if type(tree) is m.Assignment:
+				expressionCollectConstant(tree.lhs,fun_parameter)
+				expressionCollectConstant(tree.rhs,fun_parameter)
+				return fun_parameter
+		else:
+			if "**" in str(equation):
+				equation=translatepowerToFun(str(equation))
+			p = getParser()
+			tree = p.parse_expression(str(equation))
+			if type(tree) is m.Relational:
+				expressionCollectConstant(tree,fun_parameter)
+				return fun_parameter
+
+
+
+
+
+"""
+
+equations=['Y1 = Y','X1 = X','A1 = A7(_N2)','q1 = q7(_N2)','r1 = r7(_N2)','B1 = B7(_N2)','(r7(_n2)<(2*((2**_N1(_n2))*Y)))','(_n1<_N1(_n2)) -> (r7(_n2)>=(2*((2**_n1)','A7(_n2+1) = ((2**_N1(_n2))*1)','B7(_n2+1) = ((2**_N1(_n2))*Y)','q7(_n2+1) = (q7(_n2)+((2**_N1(_n2))*1))','r7(_n2+1) = (r7(_n2)-((2**_N1(_n2))*Y))','A7(0) = A','B7(0) = B','q7(0) = 0','r7(0) = X','(r7(_N2)<Y)','(_n2<_N2) -> (r7(_n2)>=Y)']
+
+"""
+def toZ3(equations):
+	for equation in equations:
+		if '>' not in equation and '<' not in equation and '->' not in equation:
+			polys=equation.split('=')
+			polys[0]=polys[0].strip()
+			polys[1]=polys[1].strip()
+			if "**" in str(polys[1]):
+				polys[1]=translatepowerToFun(str(polys[1]))
+			expression=str(str(polys[0])+"="+str(polys[1]))
+			p = getParser()
+			tree = p.parse_expression(expression)
+			wff_equation=construct_expression(tree,2,'_n2')
+			print wff_equation
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 """
