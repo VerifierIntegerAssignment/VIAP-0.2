@@ -539,21 +539,23 @@ def wff2z3InsExpand(w,vm):
                 	#return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
                 	#'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
                 	equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))") 
-			for i in range(0,int(vm[x])):
-				lhs1=lhs_org.replace(x,str(i))
-				rhs1=rhs_org.replace(x,str(i))         	
-            			equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs1+' == '+ rhs1+"))")  
+			if is_number(str(vm[x]))==True:
+				for i in range(0,int(vm[x])):
+					lhs1=lhs_org.replace(x,str(i))
+					rhs1=rhs_org.replace(x,str(i))         	
+            				equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs1+' == '+ rhs1+"))")  
                 	return equations
                 else:
                   	equations.append("ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))") 
                 	return equations
             else:
             	if w[0] == 'i1':
-                	equations.append(lhs+' == '+ rhs) 
-            		for i in range(0,int(vm[x])):
-            			lhs1=lhs_org.replace(x,str(i))
-            			rhs1=rhs_org.replace(x,str(i))         	
-            			equations.append(lhs1+' == '+ rhs1)            		 
+                	equations.append(lhs+' == '+ rhs)
+                	if is_number(str(vm[x]))==True:
+            			for i in range(0,int(vm[x])):
+            				lhs1=lhs_org.replace(x,str(i))
+            				rhs1=rhs_org.replace(x,str(i))         	
+            				equations.append(lhs1+' == '+ rhs1)            		 
                 	return equations
                 else:
                 	equations.append(lhs+' == '+ rhs) 
@@ -3122,7 +3124,7 @@ Program Expression to Collect literal parameters
 def expressionCollectConstant(statement,fun_parameter):
      expression=""
      if type(statement) is m.Name:
-     	expression+="expres('"+statement.value+"')"
+     	expression+=statement.value
      elif type(statement) is m.Literal:
      	expression+=statement.value
      elif type(statement) is m.MethodInvocation:
@@ -3138,11 +3140,13 @@ def expressionCollectConstant(statement,fun_parameter):
      	for argument in statement.arguments:
      		if parameter=="":
      			parameter=expressionCollectConstant(argument,fun_parameter)
-     			parameterlist.append(parameter)     				
+     			if '_n' not in parameter:
+     				parameterlist.append(parameter)     				
      		else:
      			parameterstr=expressionCollectConstant(argument,fun_parameter)
      			parameter+=","+expressionCollectConstant(argument,fun_parameter)
-     			parameterlist.append(parameterstr)
+     			if '_n' not in parameterstr:
+     				parameterlist.append(parameterstr)
      				
      	if key is not None:
      		fun_parameter[key]=parameterlist
@@ -3914,10 +3918,20 @@ def tactic3(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 							parameterlist.append(x[2])
 				if key is not None:
 					fun_map2[key]=parameterlist
+
 		if len(fun_map2)!=0 and len(fun_map1)!=0:
 			for x in fun_map1:
 				for i in range(0, len(fun_map2[x])):
-					parameter_constant_map[fun_map2[x][i]]=str(int(fun_map1[x][i])-1)
+					if is_number(str(fun_map1[x][i]))==False:
+						const_vfact=[]
+						const_vfact.append(str(fun_map1[x][i]))
+						const_vfact.append(0)
+						ul=['constant']
+						const_vfact.append(ul)
+						vfact.append(const_vfact)
+						parameter_constant_map[fun_map2[x][i]]=str(fun_map1[x][i])+"-1"
+					else:
+						parameter_constant_map[fun_map2[x][i]]=str(int(fun_map1[x][i])-1)
 			for x in a:
 				equations=wff2z3InsExpand(x,parameter_constant_map)
 				for equation in equations:
