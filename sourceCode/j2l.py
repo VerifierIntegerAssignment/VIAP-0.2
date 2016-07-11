@@ -339,6 +339,12 @@ def wff_d0(e,c): #e: expr; c: expres
 def wff_d1(v,e,c): #v: string, e and c: expres
     return ['d1',v,e,c]
 
+def wff_s0(e): #e: expres
+    return ['s0',e]
+
+def wff_s1(e): #e: expres
+    return ['s1',e]
+
 def wff_a(e): #e: expres
     return ['a',e]
 
@@ -350,7 +356,7 @@ def wff2string(w):
             return '(iff (= '+expr2string(w[1])+' 0) '+ expr2string(w[2])+')'
         elif w[0] == 'd1':
             return '(iff (= '+expr2string(w[2])+' (+ '+w[1]+' 1)) '+expr2string(w[3])+')'
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0' or w[0]=='s1':
             return expr2string(w[1])
 
 #print in normal infix notation
@@ -361,7 +367,7 @@ def wff2string1(w):
             return expr2string1(w[1])+'=0 <=> '+ expr2string1(w[2])
         elif w[0] == 'd1':
             return expr2string1(w[2])+'='+w[1]+'+1 <=> '+expr2string1(w[3])
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0' or w[0]=='s1' :
             return expr2string1(w[1])
             
 #convert wff to z3 constraint
@@ -408,7 +414,7 @@ def wff2z3(w):
                 return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
             else:
                 return lhs+' == '+rhs
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0':
             var_cstr_map={}
 	    expression=expr2z3(w[1],var_cstr_map)
             list_var_str=qualifier_list(var_cstr_map.keys())
@@ -417,14 +423,158 @@ def wff2z3(w):
             if list_var_str is not None and list_cstr_str is not None:
                 if 'Implies' in expression:
                     arg_list=extract_args(expression)
-                    return 'ForAll(['+list_var_str+'],Implies('+'And('+arg_list[0]+','+list_cstr_str+'),'+arg_list[1]+'))'
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    if list_var_str is not None and list_cstr_str is not None:
+                        return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+arg_list[1]+'))'
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        return arg_list[1]
+                else:
+                    return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
+            else:
+                return expression
+        elif w[0]=='s1':
+            var_cstr_map={}
+	    expression=expr2z3(w[1],var_cstr_map)
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if 'Implies' in expression:
+                arg_list=extract_args(expression)
+                constr=simplify(arg_list[0])
+                axms=str(constr).split('<')
+                axms[0]=axms[0].strip()
+                axms[1]=axms[1].strip()
+                var_cstr_map_mod={}
+                for x in var_cstr_map.keys():
+                    if x!=axms[0]:
+                        var_cstr_map_mod[x]=var_cstr_map[x]
+                list_var_str=qualifier_list(var_cstr_map_mod.keys())
+                list_cstr_str=cstr_list(var_cstr_map_mod.values())
+                arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                if list_var_str is not None and list_cstr_str is not None:
+                    return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+arg_list[1]+'))'
                     #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                else:
+                    return arg_list[1]
+            else:
+                return None
+        else:
+            return expression
+
+  
+
+#convert wff to z3 constraint
+def wff2z3Stronger(w):
+        if w[0] == 'e' or w[0] == 'i0' or w[0] == 'i1':
+            var_cstr_map={}
+            lhs=expr2z3(w[-2],var_cstr_map)
+            rhs=expr2z3(w[-1],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+            	if w[0] == 'i1':
+                	return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
+                	#return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+                else:
+                	return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+            else:
+                return lhs+' == '+ rhs
+        elif w[0] == 'd0': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+	    lhs=expr2z3(w[1],var_cstr_map)
+            rhs=expr2z3(w[2],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))"
+                return 'ForAll(['+list_var_str+'],'+lhs+'=0 == '+ rhs+")"
+            else:
+                return lhs+'=0 == '+ rhs
+        elif w[0] == 'd1': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+	    lhs=expr2z3(w[2],var_cstr_map)
+            rhs=expr2z3(w[3],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(w[1]+'+1'))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))"
+                return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
+            else:
+                return lhs+' == '+rhs
+        elif w[0]=='a' or w[0]=='s0':
+            var_cstr_map={}
+	    expression=expr2z3(w[1],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    if list_var_str is not None and list_cstr_str is not None:
+                        return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+arg_list[1]+'))'
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        return arg_list[1]
                 else:
                     return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
                     #return 'ForAll(['+list_var_str+'],'+expression+')'
             else:
                 return expression
-  
+        elif w[0]=='s1':
+            var_cstr_map={}
+            equations=[]
+	    expression=expr2z3(w[1],var_cstr_map)
+	    list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    var_cstr_map_mod={}
+                    for x in var_cstr_map.keys():
+                        if x!=axms[0]:
+                            var_cstr_map_mod[x]=var_cstr_map[x]
+                    list_var_str_new=qualifier_list(var_cstr_map_mod.keys())
+                    list_cstr_str_new=cstr_list(var_cstr_map_mod.values())
+                    old_arg_list=arg_list[1]
+                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    if list_var_str_new is not None and list_cstr_str_new is not None:
+                        equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
+                        equations.append('ForAll(['+str(list_var_str_new)+'],Implies('+str(list_cstr_str_new)+','+arg_list[1]+'))')
+                        return equations
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
+                        equations.append(arg_list[1])
+                        return equations
+                else:
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
+
+        else:
+            return expression
+
+
+
 
 
 #convert wff to z3 constraint
@@ -490,7 +640,7 @@ def wff2z3Ins(w,vm):
                 #return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
             else:
                 return lhs+' == '+rhs
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0' or w[0]=='s1':
             var_cstr_map={}
 	    expression=expr2z3(w[1],var_cstr_map)
 	    for x in vm.keys():
@@ -605,7 +755,7 @@ def wff2z3InsExpand(w,vm):
             else:
                 equations.append(lhs+' == '+rhs)
                 return equations
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0' or w[0]=='s1':
             var_cstr_map={}
             equations=[]
 	    expression=expr2z3(w[1],var_cstr_map)
@@ -634,6 +784,109 @@ def wff2z3InsExpand(w,vm):
             	equations=[]
             	equations.append(expression)
                 return equations
+
+
+
+#convert wff to z3 constraint
+def wff2z3SimpleSmall(w):
+        if w[0] == 'e' or w[0] == 'i0' or w[0] == 'i1':
+            var_cstr_map={}
+            lhs=expr2z3(w[-2],var_cstr_map)
+            rhs=expr2z3(w[-1],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+            	if w[0] == 'i1':
+                	return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+ rhs+"))"
+                	#return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+                else:
+                	return 'ForAll(['+list_var_str+'],'+lhs+' == '+ rhs+")"
+            else:
+                return lhs+' == '+ rhs
+        elif w[0] == 'd0': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+	    lhs=expr2z3(w[1],var_cstr_map)
+            rhs=expr2z3(w[2],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+'=0 == '+ rhs+"))"
+                return 'ForAll(['+list_var_str+'],'+lhs+'=0 == '+ rhs+")"
+            else:
+                return lhs+'=0 == '+ rhs
+        elif w[0] == 'd1': # Bi-implications are represented using equality == in z3py
+            var_cstr_map={}
+	    lhs=expr2z3(w[2],var_cstr_map)
+            rhs=expr2z3(w[3],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            lhs=convert_pow_op_fun(simplify_expand_sympy(w[1]+'+1'))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            if list_var_str is not None and list_cstr_str is not None:
+                #return "ForAll(["+list_var_str+"],Implies("+list_cstr_str+","+lhs+' == '+rhs+"))"
+                return "ForAll(["+list_var_str+"],"+lhs+' == '+rhs+")"
+            else:
+                return lhs+' == '+rhs
+        elif w[0]=='a' or w[0]=='s0':
+            var_cstr_map={}
+	    expression=expr2z3(w[1],var_cstr_map)
+            list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    if list_var_str is not None and list_cstr_str is not None:
+                        return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+arg_list[1]+'))'
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        return arg_list[1]
+                else:
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
+            else:
+                return expression
+        elif w[0]=='s1':
+            var_cstr_map={}
+	    expression=expr2z3(w[1],var_cstr_map)
+	    list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    var_cstr_map_mod={}
+                    for x in var_cstr_map.keys():
+                        if x!=axms[0]:
+                            var_cstr_map_mod[x]=var_cstr_map[x]
+                    list_var_str=qualifier_list(var_cstr_map_mod.keys())
+                    list_cstr_str=cstr_list(var_cstr_map_mod.values())
+                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    if list_var_str is not None and list_cstr_str is not None:
+                        return 'ForAll(['+str(list_var_str)+'],Implies('+str(list_cstr_str)+','+arg_list[1]+'))'
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        return arg_list[1]
+                else:
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
+
+        else:
+            return expression
+
 
 
 
@@ -693,8 +946,8 @@ def wff_extend(w,n,excl): #w: wff, n: expres, excl: container of strings
         return ['d0',extend(w[1],n,excl),extend(w[2],n,excl)]
     elif w[0]=='d1': #['d1',v,e,c]
         return ['d1',w[1],extend(w[2],n,excl),extend(w[3],n,excl)]
-    elif w[0]=='a': #['a',e]
-        return ['a',extend(w[1],n,excl)]
+    elif w[0]=='a' or w[0]=='s0' or w[0]=='s1': #['a',e]
+        return [w[0],extend(w[1],n,excl)]
     else:
         print('Not a wff')
         return
@@ -711,8 +964,8 @@ def wff_sub(w,old,new): #w - wff; old, new - string
         return ['d0',expr_sub(w[1],old,new),expr_sub(w[2],old,new)]
     elif w[0]=='d1': #['d1',v,e,c]
         return ['d1',w[1],expr_sub(w[2],old,new),expr_sub(w[3],old,new)]
-    elif w[0]=='a': #['a',e]
-        return ['a',expr_sub(w[1],old,new)]
+    elif w[0]=='a' or w[0]=='s0' or w[0]=='s1': #['a',e]
+        return [w[0],expr_sub(w[1],old,new)]
     else:
         print('Not a wff')
         return
@@ -729,8 +982,8 @@ def wff_sub_set(w,old,new,v1,v2): #w - wff; old, new - string; v1,v2: sets
         return ['d0',expr_sub_set(w[1],old,new,v1,v2),expr_sub_set(w[2],old,new,v1,v2)]
     elif w[0]=='d1': #['d1',v,e,c]
         return ['d1',w[1],expr_sub_set(w[2],old,new,v1,v2),expr_sub_set(w[3],old,new,v1,v2)]
-    elif w[0]=='a': #['a',e]
-        return ['a',expr_sub_set(w[1],old,new,v1,v2)]
+    elif w[0]=='a' or w[0]=='s0' or w[0]=='s1': #['a',e]
+        return [w[0],expr_sub_set(w[1],old,new,v1,v2)]
     else:
         print('Not a wff')
         return
@@ -748,8 +1001,8 @@ def wff_sub_dict(w,d): #w - wff; d - a dictionary as in expr_sub_dict(e,d)
         return w[:2]+[expr_sub_dict(w[2],d)]
     elif w[0]=='d1': #['d1',v,e,c]
         return w[:3]+[expr_sub_dict(w[3],d)]
-    elif w[0]=='a': #['a',e]
-        return ['a',expr_sub_dict(w[1],d)]
+    elif w[0]=='a'or w[0]=='s0' or w[0]=='s1': #['a',e]
+        return [w[0],expr_sub_dict(w[1],d)]
     else:
         print('Not a wff')
         return
@@ -759,13 +1012,13 @@ def wff_sub_dict(w,d): #w - wff; d - a dictionary as in expr_sub_dict(e,d)
 #X11(a,X)=X11(a+b,1) will become X11(a,_y1,_y1,_y2)=X11(a+b,1,_y1,_y2)
  
 def parameterize_wff(ax,para):
-    if ax[0] != 'a':
+    if ax[0] != 'a' or w[0]=='s0' or w[0]=='s1':
         e1 = parameterize_expr(ax[-2],para)
         e2 = parameterize_expr(ax[-1],para)
         return ax[:-2]+[e1,e2]
     else:
         e2 = parameterize_expr(ax[-1],para)
-        return ['a',e2]
+        return [ax[0],e2]
 
     
 
@@ -787,6 +1040,17 @@ def eqset2subs_list(d):
         if 'ite' not in rhs:
         	subs_list[simplify(lhs)]=simplify_sympy(rhs)
     return subs_list
+def eqset2subs_list_ind(d):
+    subs_list={}
+    for x in d:
+        if x[0]=='i1':
+            lhs=expr2string1(x[-2])
+            rhs=expr2string1(x[-1])
+            lhs=convert_pow_op_fun(simplify_expand_sympy(lhs))
+            rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+            subs_list[lhs]=rhs
+    return subs_list
+
 """
  A program variable has the attributes: its name, its type, 
  and its corresponding logical variable when parameterized. 
@@ -1044,9 +1308,9 @@ def translateWhile(p,v,flag): #p=[l, 'while', c, b]
     c = extend(c,loop_var,frame_axioms) #add the smallest macro
     #Add by pritom
     cc = copy.deepcopy(c)
-    axioms.append(wff_a(expr_sub(expr_complement(cc),expr_op(loop_var),expr_op(smallest))))
+    axioms.append(wff_s0(expr_sub(expr_complement(cc),expr_op(loop_var),expr_op(smallest))))
     #axioms.append(wff_a(expres('not',[expr_sub(c,expr_op(loop_var),expr_op(smallest))])))
-    axioms.append(wff_a(expres('implies',
+    axioms.append(wff_s1(expres('implies',
                              [expres('<', [loop_var, smallest]),c])))
     
 
@@ -1558,7 +1822,7 @@ def normal_form_constant(expression, constant):
 def wff2fvact(w):
         if w[0] == 'e' or w[0] == 'i0' or w[0] == 'i1':
             return expr2string1(w[-2])
-        elif w[0]=='a':
+        elif w[0]=='a' or w[0]=='s0' or w[0]=='s1':
             return expr2string1(w[1])
             
 """
@@ -1785,7 +2049,7 @@ def rec_solver(f,o,a):
 	     lefthandstmt=expr2string1(axiom[2])
 	     lefthandstmt=lefthandstmt.strip()
 	     base_map[str(simplify(lefthandstmt))]=axiom
-	if axiom[0]=='a':
+	if axiom[0]=='s1':
 	     equ=expr2string1(axiom[1])
 	     if '->' in equ:
                  axiomes=equ.split('->')
@@ -1965,6 +2229,92 @@ def substituteValue(expression,key,value):
 	
 	else:
 		return expression.subs(key,value)
+
+
+
+"""
+#Function to Simplify and Expand an expression using sympy
+"""
+def sub_ind_def(expression,variable,constant):
+    if 'Implies' not in expression and 'ite' not in expression and '==' not in  expression and '!=' not in  expression and 'and' not in  expression and 'or' not in  expression:
+    	return expression.replace(variable,constant)
+    elif 'Implies' in expression :
+        axioms=extract_args(expression)
+        #return 'Implies('+simplify_expand_sympy(axioms[0])+','+simplify_expand_sympy(axioms[1])+')'
+        return 'Implies('+axioms[0]+','+sub_ind_def(axioms[1],variable,constant)+')'
+    elif 'ite' in expression:
+        axioms=extract_args(expression)
+        return 'If('+sub_ind_def(axioms[0],variable,constant)+','+sub_ind_def(axioms[1],variable,constant)+','+sub_ind_def(axioms[2],variable,constant)+')'
+    elif '==' in  expression and '!=' not in  expression and 'and' not in  expression and 'or' not in  expression:
+        left =None
+        right =None
+        left,right,expression=parenthesesOrganizer( expression ,left ,right)
+        axioms=expression.split('==')
+        if left is not None and right is not None:
+        	if '%' in axioms[0]:
+        		leftin =None
+			rightin =None
+        		leftin,rightin,axioms[0]=parenthesesOrganizer( axioms[0] ,left ,right)
+        		axm=axioms[0].split('%')
+        		if left is not None and right is not None:
+        			expression=left+leftin+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+rightin+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+        		else:
+        			expression=left+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+        	
+        	else:
+        		expression=left+str(sub_ind_def(axioms[0]))+'=='+str(sub_ind_def(axioms[1]))+right
+        		#expression=left+str(pow_to_mul(powsimp(sympify(axioms[0])).expand(basic=True)))+'=='+str(powsimp(pow_to_mul(sympify(axioms[1])).expand(basic=True)))+right
+        else:
+        	if '%' in axioms[0]:
+			leftin =None
+			rightin =None
+			leftin,rightin,axioms[0]=parenthesesOrganizer( axioms[0] ,left ,right)
+			axm=axioms[0].split('%')
+			if left is not None and right is not None:
+				expression=left+leftin+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+rightin+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+			else:
+				expression=left+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+		        	
+        	else:
+        		expression=str(simplify_sympy(axioms[0]))+'=='+str(simplify_sympy(axioms[1]))
+        		#expression=str(pow_to_mul(powsimp(sympify(axioms[0])).expand(basic=True)))+'=='+str(pow_to_mul(powsimp(sympify(axioms[1])).expand(basic=True)))
+        return expression
+    elif '!=' in  expression and 'and' not in  expression and 'or' not in  expression:
+        left =None
+        right =None
+        left,right,expression=parenthesesOrganizer( expression ,left ,right)
+        axioms=expression.split('!=')
+        if left is not None and right is not None:
+              	if '%' in axioms[0]:
+	        	leftin =None
+			rightin =None
+	        	leftin,rightin,axioms[0]=parenthesesOrganizer( axioms[0] ,left ,right)
+	        	axm=axioms[0].split('%')
+	        	if leftin is not None and rightin is not None:
+	        		expression=left+leftin+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+rightin+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+	        	else:
+        			expression=left+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+        	else:
+        		expression=left+str(sub_ind_def(axioms[0],variable,constant))+'!='+str(sub_ind_def(axioms[1],variable,constant))+right
+        		#expression=left+str(powsimp(pow_to_mul(sympify(axioms[0])).expand(basic=True)))+'!='+str(pow_to_mul(powsimp(sympify(axioms[1])).expand(basic=True)))+right
+        else:
+        	 if '%' in axioms[0]:
+		 	leftin =None
+			rightin =None
+			leftin,rightin,axioms[0]=parenthesesOrganizer( axioms[0] ,left ,right)
+			axm=axioms[0].split('%')
+			if leftin is not None and rightin is not None:
+				expression=left+leftin+str(sub_ind_def(axm[0],variable,constant))+'%'+str(simplify_sympy(axm[1],variable,constant))+rightin+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+			else:
+		        	expression=left+str(sub_ind_def(axm[0],variable,constant))+'%'+str(sub_ind_def(axm[1],variable,constant))+'=='+str(sub_ind_def(axioms[1],variable,constant))+right
+
+        	 else:
+        		expression=str(sub_ind_def(axioms[0],variable,constant))+'!='+str(sub_ind_def(axioms[1],variable,constant))
+        		#expression=str(pow_to_mul(powsimp(sympify(axioms[0])).expand(basic=True)))+'!='+str(pow_to_mul(powsimp(sympify(axioms[1])).expand(basic=True)))
+        return expression
+    else:
+        return  expression
+
 		
 
 """
@@ -3613,7 +3963,7 @@ def prove(axiom,pre_condition,post_condition,flag):
 	if len(post_condition)==0:
 		print "Nothing To Prove"
 		return
-	if axiom is not None and post_condition is not None and flag>0 and flag<4:
+	if axiom is not None and post_condition is not None and flag>0 and flag<5:
 	        if flag==1:
 	        	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
                 	start_time=current_milli_time()
@@ -3635,6 +3985,13 @@ def prove(axiom,pre_condition,post_condition,flag):
 			end_time=current_milli_time()
 			print "Times to Get Result"
                 	print end_time-start_time
+                elif flag==4:
+			writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Induction")
+			start_time=current_milli_time()
+			tactic4(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),axiom.getConst_var_map())
+			end_time=current_milli_time()
+			print "Times to Get Result"
+                	print end_time-start_time
                 writeLogFile( "j2llogs.logs" , getTimeStamp()+"\n End of Proof\n")
               
 
@@ -3650,13 +4007,16 @@ Strategy 2  ----> 1.Directly translate axoimes to z3 constraint 2.Change  expone
 def query2z3(constraint_list,conclusion,vfact,inputmap):
 	pythonProgram="from z3 import *\n"
 	pythonProgram+="set_param(proof=True)\n"
-	pythonProgram+="x=Int('x')\n"
-	pythonProgram+="y=Int('y')\n"
+	pythonProgram+="_p1=Int('_p1')\n"
+	pythonProgram+="_p2=Int('_p2')\n"
 	status=""
 	for [x,k,l] in vfact:
 		if k==0:
 			if l[0]=="int":
-				pythonProgram+=x+"=Int(\'"+x+"\')\n"
+				if '_N' in x:
+					pythonProgram+=x+"=Const(\'"+x+"\',IntSort())\n"
+				else:				
+					pythonProgram+=x+"=Int(\'"+x+"\')\n"
 			elif l[0]=="double":
 				pythonProgram+=x+"=Real(\'"+x+"\')\n"
 			elif l[0]=="float":
@@ -3678,6 +4038,13 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 	#pythonProgram+="_s.add(ForAll(x,Implies(x>0,power(x, 0)==1)))\n"
 	#pythonProgram+="_s.add(ForAll([x,y],Implies(And(x>0,y>0),power(x, y)==power(x, y-1)*x)))\n"
 	#pythonProgram+="_s.set(mbqi=True)\n"
+        pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>=0, power(0,_p1)==0)))\n"
+        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p2,_p1)==0,_p2==0)))\n"
+        pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>0, power(_p1,0)==1)))\n"
+        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p1,_p2)==1,Or(_p1==1,_p2==0))))\n"
+        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(And(_p1>0,_p2>=0), power(_p1,_p2+1)==power(_p1,_p2)*_p1)))\n"      
+
+
 	pythonProgram+="_s.set(\"timeout\","+str(TIMEOUT)+")\n"
 	for equation in constraint_list:
 		pythonProgram+="_s.add("+str(equation)+")\n"
@@ -3702,7 +4069,6 @@ Tactic 1  ----> 1.Directly translate axoimes to z3 constraint 2.try to prove con
 
 """
 def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
-
 	constraint_list=[]
 	frame_axioms=eqset2constraintlist(f)
 	for x in frame_axioms:
@@ -3712,20 +4078,13 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 	for x in out_axioms:
 		constraint_list.append(x)
 	for x in a: 
-		constraint_list.append(wff2z3(x))
+            constraint_list.append(wff2z3(x))
 	for x in constaints:
 		constraint_list.append(x)
 	for x in pre_condition:
         	constraint_list.append(x)
 	for conclusion in conclusions:
 		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
-		#if '==' not in conclusion:
-		#	conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
-		#else:
-		#	axm=conclusion.split('==')
-		#	conclusion=str(simplify_sympy(axm[0]).subs(subs_list))+'=='+str(simplify_sympy(axm[1]).subs(subs_list))
-		#	#conclusion=simplify_expand_for_int(str(simplify_sympy(axm[0]).subs(subs_list)))+'=='+simplify_expand_for_int(str(simplify_sympy(axm[1]).subs(subs_list)))
-		#	#conclusion=str(pow_to_mul(powsimp(simplify(axm[0])).expand(basic=True)).subs(subs_list))+'=='+str(pow_to_mul(powsimp(simplify(axm[1])).expand(basic=True)).subs(subs_list))
 		conclusion=simplify_conclusion(conclusion,subs_list)	
 		if "factorial" in conclusion:
 			cfact=eval("['factorial',1,['int','int']]")
@@ -3734,11 +4093,9 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 		status=query2z3(constraint_list,conclusion,vfact,inputmap)
 		writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
 		if "Successfully Proved" in status:
-			print "Successfully Proved"
-			
+			print "Successfully Proved"			
 		elif "Counter Example" in status:
-			print status
-			
+			tactic4(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints)			
 		else:
 			print "Failed to Prove"
 			
@@ -3754,12 +4111,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 	for conclusion in conclusions:
 		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
 		subs_list=eqset2subs_list(o)
-		#if '==' not in conclusion:
-		#	conclusion=str(simplify_sympy(conclusion).subs(subs_list))
-		#else:
-		#	axm=conclusion.split('==')
-		#	conclusion=str(simplify_sympy(axm[0]).subs(subs_list))+'=='+str(simplify_sympy(axm[1]).subs(subs_list))
-		conclusion=simplify_conclusion(conclusion,subs_list)	
+		conclusion=simplify_conclusion(conclusion,subs_list)
 		variable=None
 		constant=None
 		const_map={}
@@ -3779,26 +4131,8 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 		for x in out_axioms:
 			constraint_list.append(x)
 		for x in a: 
-			constraint_list.append(wff2z3Ins(x,var_const_map))
-			#constraint_list.append(wff2z3(x))
+			constraint_list.append(wff2z3(x))
 		for x in constaints:
-			if 'ForAll' in x:
-				updated_var=[]
-				parameters=extract_args(x)
-				parameters[0]=parameters[0].replace('[','')
-				parameters[0]=parameters[0].replace(']','')
-				list=parameters[0].split(',')
-				for y in list:
-					if y not in const_map.values():
-						updated_var.append(y)
-				if len(updated_var)==0:
-					for x in var_const_map:
-            					parameters[1]=parameters[1].replace(x,var_const_map[x])
-					x=parameters[1]
-				else:
-					for x in var_const_map:
-            					parameters[1]=parameters[1].replace(x,var_const_map[x])
-					x='ForAll('+''.join(updated_var)+','+parameters[1]+')'
 			constraint_list.append(x)
 		for x in pre_condition:
         		constraint_list.append(x)
@@ -3808,16 +4142,18 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				if k==0:
 					ul=['constant']
 					update_vfact.append([var_const_map[x],k,ul])
+					update_vfact.append([x,k,l])
 				else:
 					update_vfact.append([var_const_map[x],k,l])
+					update_vfact.append([x,k,l])
 			else:
 				update_vfact.append([x,k,l])
 		
-
-		
+	
 		for x in const_map:
 			variable=var_const_map[const_map[x]]			
 			constant=x
+			loop_var=const_map[x]
 			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion):
 				exp=str(conclusion).split('==')
 				invariantstmtdisplay=str(simplify(exp[0]).subs(constant,const_map[x]))+"=="+str(simplify(exp[1]).subs(constant,const_map[x]))
@@ -3860,14 +4196,23 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					inductiveassum=str(lexp)+"=="+str(rexp)
 					lexp=simplify(exp[0]).subs(variable,variable+"+1")
 					rexp=simplify(exp[1]).subs(variable,variable+"+1")
-					inductivestep=str(lexp)+"=="+str(rexp)
+					ind_def_map=eqset2subs_list_ind(a)
+					for i_e in ind_def_map:
+                                            lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+                                            rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				else:
 					inductiveassum=simplify(invariantstmt)
 					inductivestep=simplify(invariantstmt).subs(variable,variable+"+1")
+					ind_def_map=eqset2subs_list_ind(a)
+					temp_inductivestep=str(inductivestep)
+					for i_e in ind_def_map:
+						temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
+					inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
 				for equation in constraint_list:
 					updated_equation.append(equation)
 				updated_equation.append(variable+">=0")
-				updated_equation.append(inductiveassum)
+				#updated_equation.append(inductiveassum)
 				writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
 				status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
 				#status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
@@ -3876,7 +4221,35 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					print "Successfully Proved"
 					return 
 				elif "Counter Example" in status:
-					print status
+					constraint_list=[]
+					frame_axioms=eqset2constraintlist(f)
+					for x in frame_axioms:
+						constraint_list.append(x)
+					out_axioms=eqset2constraintlist(o)
+					for x in out_axioms:
+						constraint_list.append(x)
+					for x in a:
+						 equations=wff2z3Stronger(x)
+						 if type(equations) is list:
+						 	for equation in equations:                    
+						        	constraint_list.append(equation)
+						 elif type(equations) is str:
+                					constraint_list.append(equations)
+					for x in constaints:
+						constraint_list.append(x)
+					for x in pre_condition:
+						constraint_list.append(x)
+					constraint_list.append(variable+">=0")
+					writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
+					status=query2z3(constraint_list,str(inductivestep),update_vfact,inputmap)
+					writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
+					if "Successfully Proved" in status:
+						print "Successfully Proved"
+						return 
+					elif "Counter Example" in status:
+						print status
+					else:
+						print "Failed to Prove"
 				else:
 					print "Failed to Prove"
 			elif "Counter Example" in status:
@@ -3955,6 +4328,44 @@ def tactic3(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 		else:
 			print "Failed to Prove"
         	
+def tactic4(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
+        constraint_list=[]
+	frame_axioms=eqset2constraintlist(f)
+	for x in frame_axioms:
+		constraint_list.append(x)
+	out_axioms=eqset2constraintlist(o)
+	subs_list=eqset2subs_list(o)
+	for x in out_axioms:
+		constraint_list.append(x)
+	for x in a: 
+		#constraint_list.append(wff2z3(x))
+            equations=wff2z3Stronger(x)
+            if type(equations) is list:
+                for equation in equations:                    
+                    constraint_list.append(equation)
+            elif type(equations) is str:
+                constraint_list.append(equations)
+	for x in constaints:
+		constraint_list.append(x)
+	for x in pre_condition:
+        	constraint_list.append(x)
+	for conclusion in conclusions:
+		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
+		conclusion=simplify_conclusion(conclusion,subs_list)	
+		if "factorial" in conclusion:
+			cfact=eval("['factorial',1,['int','int']]")
+			vfact.append(cfact)
+		
+		status=query2z3(constraint_list,conclusion,vfact,inputmap)
+		writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
+		if "Successfully Proved" in status:
+			print "Successfully Proved"
+			
+		elif "Counter Example" in status:
+			print status
+			
+		else:
+			print "Failed to Prove"
 
 
 """
