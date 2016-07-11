@@ -7,7 +7,7 @@ public class addDafny{
         int r;
 	int l;
 	r = X;
-    ifY < 0) 
+    if(Y < 0) 
     {
        l = Y;
        while(l != 0) 
