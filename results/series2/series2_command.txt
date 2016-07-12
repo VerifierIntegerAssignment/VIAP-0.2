@@ -1,0 +1,6 @@
+file_name='benchmark/NSeries2.java'
+axiom=translate(file_name)
+pre_condition=['X>=0']
+post_condition=['sum1==X*(X+1)*(2*X+1)/6']
+flag=1
+prove(file_name,pre_condition,post_condition,flag)
