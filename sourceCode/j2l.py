@@ -1404,21 +1404,27 @@ def translateWhile(p,v,flag): #p=[l, 'while', c, b]
     		break
     updated_axioms=[]
     for ax in axioms:
-    	if ax[0]=='a':
+    	if ax[0]=='s0':
     		expression=expr2string1(ax[1])
     		if '->' not in expression and constant in expression:
     			if '>=' in expression and 'and' not in expression and 'or' not in expression:
 				expression=normal_form_constant(expression, constant)
 				pp = getParser()
 				tree = pp.parse_expression(str(expression))			 
-				ax=construct_expression_normal(tree)
-				updated_axioms.append(ax)
+				axupdate=construct_expression_normal(tree)
+				if axupdate is not None:
+					updated_axioms.append(axupdate)
+				else:
+					updated_axioms.append(ax)
     			elif '<=' in expression and 'and' not in expression and 'or' not in expression:
 				expression=normal_form_constant(expression, constant)
 				pp = getParser()
 				tree = pp.parse_expression(str(expression))		 
-				ax=construct_expression_normal(tree)
-				updated_axioms.append(ax)
+				axupdate=construct_expression_normal(tree)
+				if axupdate is not None:
+					updated_axioms.append(axupdate)
+				else:
+					updated_axioms.append(ax)
 			else:
 				updated_axioms.append(ax)
 		else:
@@ -1767,6 +1773,9 @@ Convert Inequality to Normal Form
 
 
 def normal_form_constant(expression, constant):
+    #print "*************"
+    #print expression
+    #print "*************"
     mult_by_minus_one_map = {
     	None: '==',
     	'>=': '<=',
@@ -1812,6 +1821,11 @@ def normal_form_constant(expression, constant):
 	    			all_on_left = all_on_left * -1
 	        		new_rhs = new_rhs * -1
         			op = mult_by_minus_one_map[op]	
+    
+    #print "*************"
+    #print all_on_left
+    #print new_rhs
+    #print "*************"
     return Relational(all_on_left,new_rhs,op)
 
 
@@ -4253,7 +4267,97 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				else:
 					print "Failed to Prove"
 			elif "Counter Example" in status:
-				print status
+				constraint_list=[]
+				frame_axioms=eqset2constraintlist(f)
+				for x in frame_axioms:
+					constraint_list.append(x)
+				out_axioms=eqset2constraintlist(o)
+				for x in out_axioms:
+					constraint_list.append(x)
+				for x in a:
+					equations=wff2z3Stronger(x)
+				if type(equations) is list:
+					for equation in equations:                    
+						constraint_list.append(equation)
+				elif type(equations) is str:
+					constraint_list.append(equations)
+				for x in constaints:
+					constraint_list.append(x)
+				for x in pre_condition:
+					constraint_list.append(x)
+				constraint_list.append(variable+">=0")
+				writeLogFile( "j2llogs.logs" , "\nBase Case \n"+str(basecasestmt)+"\n" )
+				status=query2z3(constraint_list,str(basecasestmt),update_vfact,inputmap)
+				#status=query2z3(constraint_list,str(basecasestmt),vfact,inputmap)
+				writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
+				if "Successfully Proved" in status:
+					print "Successfully Proved"
+					print "Inductive Step"
+					print "Inductive Assumption"
+					print invariantstmt
+					updated_equation=[]
+					updated_vfact=[]
+					if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
+						exp=str(invariantstmt).split('==')
+						lexp=simplify(exp[0])
+						rexp=simplify(exp[1])
+						inductiveassum=str(lexp)+"=="+str(rexp)
+						lexp=simplify(exp[0]).subs(variable,variable+"+1")
+						rexp=simplify(exp[1]).subs(variable,variable+"+1")
+						ind_def_map=eqset2subs_list_ind(a)
+						for i_e in ind_def_map:
+				                	lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+				                        rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+						inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
+					else:
+						inductiveassum=simplify(invariantstmt)
+						inductivestep=simplify(invariantstmt).subs(variable,variable+"+1")
+						ind_def_map=eqset2subs_list_ind(a)
+						temp_inductivestep=str(inductivestep)
+						for i_e in ind_def_map:
+							temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
+						inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
+					for equation in constraint_list:
+						updated_equation.append(equation)
+					updated_equation.append(variable+">=0")
+					#updated_equation.append(inductiveassum)
+					writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
+					status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
+					#status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
+					writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
+					if "Successfully Proved" in status:
+						print "Successfully Proved"
+						return 
+					elif "Counter Example" in status:
+						constraint_list=[]
+						frame_axioms=eqset2constraintlist(f)
+						for x in frame_axioms:
+							constraint_list.append(x)
+						out_axioms=eqset2constraintlist(o)
+						for x in out_axioms:
+							constraint_list.append(x)
+						for x in a:
+							equations=wff2z3Stronger(x)
+						if type(equations) is list:
+							for equation in equations:                    
+								constraint_list.append(equation)
+						elif type(equations) is str:
+					                constraint_list.append(equations)
+						for x in constaints:
+							constraint_list.append(x)
+						for x in pre_condition:
+							constraint_list.append(x)
+						constraint_list.append(variable+">=0")
+						writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
+						status=query2z3(constraint_list,str(inductivestep),update_vfact,inputmap)
+						writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
+						if "Successfully Proved" in status:
+							print "Successfully Proved"
+							return 
+						elif "Counter Example" in status:
+							print status
+						else:
+							print "Failed to Prove"
 			else:
 				print "Failed to Prove"
 
@@ -4632,8 +4736,10 @@ def construct_expression(tree,postion,variable):
 def construct_expression_normal(tree):
 	expression=""
 	if type(tree) is m.Relational:
-		expression="['a',"+expressionCreator(tree)+"]"
-	return eval(expression)
+		expression="['s1',"+expressionCreator(tree)+"]"
+		return eval(expression)
+	else :
+		return None
 				
 
 """
