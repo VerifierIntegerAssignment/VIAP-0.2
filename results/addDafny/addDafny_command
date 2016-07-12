@@ -1,0 +1,6 @@
+file_name='benchmark/addDafny.java'
+axiom=translate(file_name)
+pre_condition=[]
+post_condition=['r1==X+Y']
+flag=1
+prove(axiom,pre_condition,post_condition,flag)
