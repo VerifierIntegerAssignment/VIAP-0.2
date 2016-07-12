@@ -1,0 +1,6 @@
+file_name='benchmark\power.java'
+axiom=translate(file_name)
+pre_condition=['a>=0','b>=0']
+post_condition=['P1==a**b']
+flag=1
+prove(axiom,pre_condition,post_condition,flag)
