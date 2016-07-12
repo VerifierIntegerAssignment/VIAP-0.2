@@ -1,0 +1,6 @@
+file_name='benchmark/series4.java'
+axiom=translate(file_name)
+pre_condition=['X>=0']
+post_condition=['sum1==(6*X**5+15*X**4+10*X**3-X)/30']
+flag=1
+prove(axiom,pre_condition,post_condition,flag)
