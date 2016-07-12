@@ -1,0 +1,6 @@
+file_name='benchmark/potSumm3.java'
+axiom=translate(file_name)
+pre_condition=['K>=0']
+post_condition=['l1==K*(K+1)*(2*K+1)/6']
+flag=1
+prove(axiom,pre_condition,post_condition,flag)
