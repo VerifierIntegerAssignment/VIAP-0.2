@@ -1,0 +1,6 @@
+file_name='benchmark/series7.java'
+axiom=translate(file_name)
+pre_condition=['X>=0']
+post_condition=['sum1==(3*X**8+12*X**7+14*X**6-7*X**4+2*X**2)/24']
+flag=1
+prove(axiom,pre_condition,post_condition,flag)
