@@ -1,0 +1,5 @@
+file_name='benchmark/series8.java'
+pre_condition=['X>=0']
+post_condition=['sum1==(10*X**9+45*X**8+60*X**7-42*X**5+20*X**3-3*X)/90']
+flag=1
+prove(file_name,pre_condition,post_condition,flag)
