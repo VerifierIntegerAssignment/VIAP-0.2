@@ -217,6 +217,7 @@ prove(axiom,pre_condition,post_condition)
 #Series 1^6+2^6+3^6+....
 
 file_name='benchmark/series6.java'
+axiom=translate(file_name)
 pre_condition=['X>=0']
 post_condition=['sum1==(6*X**7+21*X**6+21*X**5-7*X**3+X)/42']
 prove(axiom,pre_condition,post_condition)
@@ -233,6 +234,7 @@ prove(axiom,pre_condition,post_condition)
 #Series 1^8+2^8+3^8+....
 
 file_name='benchmark/series8.java'
+axiom=translate(file_name)
 pre_condition=['X>=0']
 post_condition=['sum1==(10*X**9+45*X**8+60*X**7-42*X**5+20*X**3-3*X)/90']
 prove(axiom,pre_condition,post_condition)
