@@ -1,0 +1,5 @@
+file_name='benchmark/abs.java'
+axiom=translate(file_name)
+pre_condition=[]
+post_condition=['a1>=0']
+prove(axiom,pre_condition,post_condition)
