@@ -1,0 +1,36 @@
+>>> file_name='benchmark/potSumm10.java'
+>>> axiom=translate(file_name)
+potSumm10
+ Class Name:
+potSumm10
+ Class Variables:
+{}
+Method Name:
+potSumm10
+Return Type:
+void
+Input Variables:
+{ X:int}
+Local Variables:
+{ i:int X:int sum:int}
+All Variables:
+{ i:int X:int sum:int}
+
+Output in normal notation:
+1. Frame axioms:
+X1 = X
+
+2. Output equations:
+i1 = (_N1+0)
+sum1 = ((((((((6*(_N1**11))+(33*(_N1**10)))+(55*(_N1**9)))-(66*(_N1**7)))+(66*(_N1**5)))-(33*(_N1**3)))+(5*_N1))/66)
+
+3. Other axioms:
+(_N1>=(X-0))
+(_n1<_N1) -> ((_n1+0)<X)
+Times to Translate
+76951
+>>> pre_condition=['X>=0']
+>>> post_condition=['sum1==(6*X**11+33*X**10+55*X**9-66*X**7+66*X**5-33*X**3+5*X)/66']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+25256

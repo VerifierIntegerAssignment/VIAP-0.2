@@ -1,0 +1,36 @@
+>>> file_name='benchmark/potSumm9.java'
+>>> axiom=translate(file_name)
+potSumm9
+ Class Name:
+potSumm9
+ Class Variables:
+{}
+Method Name:
+potSumm9
+Return Type:
+void
+Input Variables:
+{ X:int}
+Local Variables:
+{ i:int X:int sum:int}
+All Variables:
+{ i:int X:int sum:int}
+
+Output in normal notation:
+1. Frame axioms:
+X1 = X
+
+2. Output equations:
+i1 = (_N1+0)
+sum1 = (((((((2*(_N1**10))+(10*(_N1**9)))+(15*(_N1**8)))-(14*(_N1**6)))+(10*(_N1**4)))-(3*(_N1**2)))/20)
+
+3. Other axioms:
+(_N1>=(X-0))
+(_n1<_N1) -> ((_n1+0)<X)
+Times to Translate
+58472
+>>> pre_condition=['X>=0']
+>>> post_condition=['sum1==(2*X**10+10*X**9+15*X**8-14*X**6+10*X**4-3*X**2)/20']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+22271
