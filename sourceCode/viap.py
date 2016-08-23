@@ -565,6 +565,24 @@ def wff2z3SC(w):
                     return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
                     #return 'ForAll(['+list_var_str+'],'+expression+')'
 
+#Function Collect Condition From All Recursive  Formulas
+
+def getAllCondtion(w,condition_map):
+	if w[0] == 'e' or w[0] == 'i0' or w[0] == 'i1':
+		var_cstr_map={}
+	        lhs=expr2z3(w[-2],var_cstr_map)
+	        rhs=expr2z3(w[-1],var_cstr_map)
+	        rhs=convert_pow_op_fun(simplify_expand_sympy(rhs))
+	        extract_conditions(rhs,condition_map)
+
+def extract_conditions(expression,condition_map):
+	if 'If' in expression:
+		axioms=extract_args(expression)
+	        condition_map[axioms[0]]=axioms[0]
+	        if 'If' in axioms[1]:
+			extract_conditions(axioms[1],condition_map)
+		if 'If' in axioms[2]:
+			extract_conditions(axioms[2],condition_map)
 
 
 #print in normal infix notation
@@ -3819,6 +3837,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				const_map[const_var_map[cm]]=cm
 				var_const_map[cm]="_k"+str(count)
 		constraint_list=[]
+		condition_map={}
 		frame_axioms=eqset2constraintlist(f)
 		for x in frame_axioms:
 			constraint_list.append(x)
@@ -3828,6 +3847,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			constraint_list.append(x)
 		for x in a: 
         		equations=wff2z3(x)
+        		getAllCondtion(x,condition_map)
         		equations_sp=None	
                 	constraint_list.append(equations)
                 	if x[0]=='s1':
@@ -3885,6 +3905,12 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			#status=query2z3(constraint_list,str(basecasestmt),vfact,inputmap)
 			writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 			if "Successfully Proved" in status:
+				case_list=[]
+				case_temp_inductivestep=None
+				if len(condition_map)==1:
+					for key in condition_map.keys():
+						case_list.append(key.replace(loop_var,variable))
+						case_list.append('Not('+key.replace(loop_var,variable)+')')
 				print "Successfully Proved"
 				print "Inductive Step"
 				print "Inductive Assumption"
@@ -3902,6 +3928,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					for i_e in ind_def_map:
                                             lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
                                             rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+					case_temp_inductivestep=str(lexp)+"=="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				else:
 					inductiveassum=simplify(invariantstmt)
@@ -3910,14 +3937,15 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					temp_inductivestep=str(inductivestep)
 					for i_e in ind_def_map:
 						temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
+					case_temp_inductivestep=temp_inductivestep
 					inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
 				for equation in constraint_list:
 					updated_equation.append(equation)
 				updated_equation.append(variable+">=0")
 				#updated_equation.append(inductiveassum)
 				writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
-				status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
-				#status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
+				#status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
+				###status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
 				writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 				if "Successfully Proved" in status:
 					#print "Successfully Proved"
@@ -3925,7 +3953,22 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				elif "Counter Example" in status:
 					return status
 				else:
-					return "Failed to Prove"
+					if len(case_list)>0:
+						case_status=False
+						for case in case_list:
+							inductivestep='Implies(And('+str(inductiveassum)+','+case+'),'+case_temp_inductivestep+')'
+							#status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
+							if "Successfully Proved" in status:
+								case_status=True
+							else:
+								case_status=False
+								break
+						if case_status==True:
+							return "Successfully Proved"
+						else:
+							return "Failed to Prove"
+					else:
+						return "Failed to Prove"
 			elif "Counter Example" in status:
 				return status
 			else:
