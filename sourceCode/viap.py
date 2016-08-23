@@ -507,22 +507,63 @@ def wff2z3(w):
                     list_var_str_new=qualifier_list(var_cstr_map_mod.keys())
                     list_cstr_str_new=cstr_list(var_cstr_map_mod.values())
                     old_arg_list=arg_list[1]
-                    arg_list[1]='Or('+axms[1]+'==0,'+arg_list[1].replace(axms[0],'('+axms[1]+'-1)')+')'
+                    arg_list[1]='Or('+axms[1]+'==0,'+simplify_expand_sympy(arg_list[1].replace(axms[0],'('+axms[1]+'-1)'))+')'
                     if list_var_str_new is not None and list_cstr_str_new is not None:
-                        equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
-                        equations.append('ForAll(['+str(list_var_str_new)+'],Implies('+str(list_cstr_str_new)+','+arg_list[1]+'))')
-                        return equations
+                        return 'ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))'
+                        #equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
+                        #equations.append('ForAll(['+str(list_var_str_new)+'],Implies('+str(list_cstr_str_new)+','+arg_list[1]+'))')
+                        #return equations
                         #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
                     else:
-                        equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
-                        equations.append(arg_list[1])
-                        return equations
+                    	return 'ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))'
+                        #equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
+                        #equations.append(arg_list[1])
+                        #return equations
                 else:
                     return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
                     #return 'ForAll(['+list_var_str+'],'+expression+')'
 
         else:
             return expression
+
+
+
+#convert wff to z3 constraint(Special Case N=0 V E(n/(N-1)))
+def wff2z3SC(w):
+	if w[0]=='s1':
+            var_cstr_map={}
+            equations=[]
+	    expression=expr2z3(w[1],var_cstr_map)
+	    list_var_str=qualifier_list(var_cstr_map.keys())
+            list_cstr_str=cstr_list(var_cstr_map.values())
+            expression=convert_pow_op_fun(simplify_expand_sympy(expression))
+            if list_var_str is not None and list_cstr_str is not None:
+                if 'Implies' in expression:
+                    arg_list=extract_args(expression)
+                    constr=simplify(arg_list[0])
+                    axms=str(constr).split('<')
+                    axms[0]=axms[0].strip()
+                    axms[1]=axms[1].strip()
+                    var_cstr_map_mod={}
+                    for x in var_cstr_map.keys():
+                        if x!=axms[0]:
+                            var_cstr_map_mod[x]=var_cstr_map[x]
+                    list_var_str_new=qualifier_list(var_cstr_map_mod.keys())
+                    list_cstr_str_new=cstr_list(var_cstr_map_mod.values())
+                    old_arg_list=arg_list[1]
+                    arg_list[1]='Or('+axms[1]+'==0,'+simplify_expand_sympy(arg_list[1].replace(axms[0],'('+axms[1]+'-1)'))+')'
+                    if list_var_str_new is not None and list_cstr_str_new is not None:
+                        #equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))'
+                        return 'ForAll(['+str(list_var_str_new)+'],Implies('+str(list_cstr_str_new)+','+arg_list[1]+'))'
+                        #return equations
+                        #return 'ForAll(['+list_var_str+'],Implies('+arg_list[0]+','+arg_list[1]+'))'
+                    else:
+                        #equations.append('ForAll(['+str(list_var_str)+'],Implies(And('+arg_list[0]+','+str(list_cstr_str)+'),'+old_arg_list+'))')
+                        return arg_list[1]
+                        #return equations
+                else:
+                    return 'ForAll(['+list_var_str+'],Implies('+list_cstr_str+','+expression+'))'
+                    #return 'ForAll(['+list_var_str+'],'+expression+')'
 
 
 
@@ -727,14 +768,14 @@ def translate1(p,v,flag):
     f,o,a,l = translate0(p,v,flag)
     #Add by Pritom Rajkhowa 10 June 2016
     f,o,a,cm = rec_solver(f,o,a)
-    print('Output in prefix notation:')
-    print('1. Frame axioms:')
-    eqset2string(f)
-    print('\n2. Output equations:')
-    eqset2string(o)
-    print('\n3. Other axioms:')
-    for x in a: 
-        print wff2string(x)
+    #print('Output in prefix notation:')
+    #print('1. Frame axioms:')
+    #eqset2string(f)
+    #print('\n2. Output equations:')
+    #eqset2string(o)
+    #print('\n3. Other axioms:')
+    #for x in a: 
+    #    print wff2string(x)
     print('\nOutput in normal notation:')
     print('1. Frame axioms:')
     eqset2string1(f)
@@ -3225,6 +3266,21 @@ def translate(file_name):
                         menbermethods.append(membermethod)
                 allvariable={}
                 sort=sortclass(type_decl.name, menbermap)
+                program_dec_start=""
+                program_dec_end=""
+                for lvap in localvarmap:
+                	var=localvarmap[lvap]
+                	if var is not None and var.getInitialvalue() is not None:
+                		print type(var.getInitialvalue())
+                		print var.getVariablename()
+                		print var.getInitialvalue().value
+                		if program_dec_start=="":
+                			program_dec_start="['-1','seq',['-1','=',expres('"+str(var.getVariablename())+"'),"+"expres('"+str(var.getInitialvalue().value)+"')]"
+                			program_dec_end="]"
+                		else:
+                	        	program_dec_start+=",['-1','seq',['-1','=',expres('"+str(var.getVariablename())+"'),"+"expres('"+str(var.getInitialvalue().value)+"')]"
+                			program_dec_end+="]"
+
                 if sort is not None:
 			print " Class Name:"
 			print sort.getSortname()
@@ -3313,17 +3369,21 @@ def translate(file_name):
 		#print variablesarray
 		#print opvariablesarray
                 #print "#################1"
-                program=eval(programToinductiveDefination(expressions , allvariable))
-                print ""
-                print "Output of The Translator Written By Prof Lin"
-                print ""
-                print "Inputs to Translator"
-                print "Parameter One:"
-                print program
-                print "Parameter Two:"
-                print variablesarray
-                print "Parameter Two Three:"
-                print 1             
+                if program_dec_start=="":
+                	str_program=programToinductiveDefination(expressions , allvariable)
+                else:
+                	str_program=program_dec_start+','+programToinductiveDefination(expressions , allvariable)+program_dec_end
+                program=eval(str_program)
+                #print ""
+                #print "Output of The Translator Written By Prof Lin"
+                #print ""
+                #print "Inputs to Translator"
+                #print "Parameter One:"
+                #print program
+                #print "Parameter Two:"
+                #print variablesarray
+                #print "Parameter Two Three:"
+                #print 1             
                 f,o,a,cm=translate1(program,variablesarray,1)
                 #f,o,a,cm=translate1(program,variablesarray,2)
                 vfacts,constraints=getVariFunDetails(f,o,a,allvariable,opvariablesarray)
@@ -3711,11 +3771,12 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 		constraint_list.append(x)
 	for x in a: 
         	equations=wff2z3(x)
-	        if type(equations) is list:
-	        	for equation in equations:                    
-	                        constraint_list.append(equation)
-	        elif type(equations) is str:
-                	constraint_list.append(equations)
+        	equations_sp=None	
+                constraint_list.append(equations)
+                if x[0]=='s1':
+        		equations_sp=wff2z3SC(x)
+        		if equations_sp is not None:
+        			constraint_list.append(equations_sp)        		
 	for x in constaints:
 		constraint_list.append(x)
 	for x in pre_condition:
@@ -3767,11 +3828,12 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			constraint_list.append(x)
 		for x in a: 
         		equations=wff2z3(x)
-	        	if type(equations) is list:
-	        		for equation in equations:                    
-	                        	constraint_list.append(equation)
-	        	elif type(equations) is str:
-                		constraint_list.append(equations)
+        		equations_sp=None	
+                	constraint_list.append(equations)
+                	if x[0]=='s1':
+        			equations_sp=wff2z3SC(x)
+        			if equations_sp is not None:
+        				constraint_list.append(equations_sp)
 		for x in constaints:
 			constraint_list.append(x)
 		for x in pre_condition:
