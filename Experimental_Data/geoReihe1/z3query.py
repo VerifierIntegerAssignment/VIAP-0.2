@@ -32,6 +32,7 @@ _s.add(ForAll([_n1],Implies(And((_n1<_N1),_n1>=0),_n1 + 1 < K)))
 _s.add(Or(_N1==0,_N1 < K))
 _s.add(_N1>=0)
 _s.add(K>0)
+_s.add(Z>1)
 _s.add(Not(power(Z,(_N1+1))-1==power(Z,K)-1))
 if sat==_s.check():
 	print "Counter Example"
