@@ -1,0 +1,36 @@
+>>> file_name='benchmark/potSumm2.java'
+>>> axiom=translate(file_name)
+potSumm2
+ Class Name:
+potSumm2
+ Class Variables:
+{}
+Method Name:
+potSumm2
+Return Type:
+void
+Input Variables:
+{ X:int}
+Local Variables:
+{ i:int X:int sum:int}
+All Variables:
+{ i:int X:int sum:int}
+
+Output in normal notation:
+1. Frame axioms:
+X1 = X
+
+2. Output equations:
+i1 = (_N1+0)
+sum1 = ((((2*(_N1**3))+(3*(_N1**2)))+_N1)/6)
+
+3. Other axioms:
+(_N1>=(X-0))
+(_n1<_N1) -> ((_n1+0)<X)
+Times to Translate
+16857
+>>> pre_condition=['X>=0']
+>>> post_condition=['sum1==X*(X+1)*(2*X+1)/6']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+15301
