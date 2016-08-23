@@ -1,0 +1,9 @@
+[  Info  ]  - Now considering 'postcondition' VC for sumOfOdd_rec @14:14...
+
+Waiting for 2 houres. Program did not terminate.
+
+
+
+
+
+

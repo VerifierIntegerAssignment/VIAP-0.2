@@ -1,0 +1,7 @@
+#Sum of Sum of odd Number 
+
+file_name='benchmark/sumOfOdd.java'
+axiom=translate(file_name)
+pre_condition=['X>=0']
+post_condition=['sum1==X*X']
+prove(axiom,pre_condition,post_condition)
