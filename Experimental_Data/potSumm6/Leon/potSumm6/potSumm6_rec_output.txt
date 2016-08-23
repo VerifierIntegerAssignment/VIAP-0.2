@@ -1,0 +1,11 @@
+[  Info  ]  - Now considering 'postcondition' VC for potSumm6 @7:16...
+
+
+Waiting for 2 houres. Program did not terminate.
+
+
+
+
+
+
+

@@ -1,0 +1,13 @@
+Dafny program verifier version 1.9.7.30401, Copyright (c) 2003-2016, Microsoft.
+test/Dafny/potSumm8/potSumm8.dfy(8,4): Error BP5003: A postcondition might not hold on this return path.
+test/Dafny/potSumm8/potSumm8.dfy(3,12): Related location: This is the postcondition that might not hold.
+Execution trace:
+    (0,0): anon0
+    test/Dafny/potSumm8/potSumm8.dfy(8,5): anon6_LoopHead
+    (0,0): anon6_LoopBody
+    test/Dafny/potSumm8/potSumm8.dfy(8,5): anon7_Else
+    (0,0): anon8_Then
+
+Dafny program verifier finished with 1 verified, 1 error
+
+
