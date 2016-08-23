@@ -1,4 +1,0 @@
-./leon --xlang testCases/test/Leon/addDafny/addDafny.scala
-
-./leon --xlang testCases/test/Leon/addDafny/addDafny_rec.scala
-
