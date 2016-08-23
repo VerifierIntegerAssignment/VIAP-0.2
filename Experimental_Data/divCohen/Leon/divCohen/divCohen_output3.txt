@@ -1,0 +1,53 @@
+[  Info  ]  - Now considering 'postcondition' VC for divCohen @21:16...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call divCohenWhile(r, q, Y, X))' VC for divCohen @9:9...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'postcondition' VC for divCohenWhile @9:9...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call divCohenWhile(A, B, r, X, Y))' VC for divCohenWhile @12:13...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call divCohenWhile(r, q, Y, X))' VC for divCohenWhile @9:9...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'postcondition' VC for divCohenWhile @12:13...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call divCohenWhile(A, B, r, X, Y))' VC for divCohenWhile @12:13...
+
+[  Info  ]  => VALID
+
+[  Info  ]   +----------------------+
+
+[  Info  ] +-¦ Verification Summary ¦----------------------------------------------------------------------+
+
+[  Info  ] ¦ +----------------------+                                                                      ¦
+
+[  Info  ] ¦ divCohen.divCohen  invariant inductive                        12:13  valid  U:smt-z3    0.020 ¦
+
+[  Info  ] ¦ divCohen.divCohen  invariant inductive                        9:9    valid  U:smt-z3    0.021 ¦
+
+[  Info  ] ¦ divCohen.divCohen  invariant inductive                        12:13  valid  U:smt-z3    0.032 ¦
+
+[  Info  ] ¦ divCohen.divCohen  invariant postcondition                    9:9    valid  U:smt-z3    0.371 ¦
+
+[  Info  ] ¦ divCohen.divCohen  invariant postcondition                    12:13  valid  U:smt-z3    0.233 ¦
+
+[  Info  ] ¦ divCohen.divCohen  postcondition                              21:16  valid  U:smt-z3    0.328 ¦
+
+[  Info  ] ¦ divCohen.divCohen  precond. (call divCohenWhile(r, q, Y, X))  9:9    valid  U:smt-z3    0.016 ¦
+
+[  Info  ] ¦-----------------------------------------------------------------------------------------------¦
+
+[  Info  ] ¦ total: 7      valid: 7      invalid: 0      unknown 0                                   1.021 ¦
+
+[  Info  ] +-----------------------------------------------------------------------------------------------+

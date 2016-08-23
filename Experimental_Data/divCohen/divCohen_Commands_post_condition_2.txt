@@ -1,0 +1,8 @@
+
+#cohendivision
+
+file_name='benchmark/divCohen.java'
+axiom=translate(file_name)
+
+post_condition=['r1<Y']
+prove(axiom,pre_condition,post_condition)
