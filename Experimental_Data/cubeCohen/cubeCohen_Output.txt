@@ -1,0 +1,38 @@
+>>> file_name='benchmark/cubeCohen.java'
+>>> axiom=translate(file_name)
+cubeCohen
+ Class Name:
+cubeCohen
+ Class Variables:
+{}
+Method Name:
+cubeCohen
+Return Type:
+void
+Input Variables:
+{ X:int}
+Local Variables:
+{ i:int y:int z:int m:int}
+All Variables:
+{ i:int X:int z:int m:int y:int}
+
+Output in normal notation:
+1. Frame axioms:
+X1 = X
+
+2. Output equations:
+i1 = (_N1+1)
+y1 = ((((3*(_N1**2))+(_N1*6))-(3*_N1))+1)
+z1 = ((6*_N1)+6)
+m1 = ((((((((2*(_N1**3))+((_N1**2)*6))-(6*(_N1**2)))+((2*_N1)*1))-(_N1*6))+(4*_N1))+(2*0))/2)
+
+3. Other axioms:
+((_N1+1)>X)
+(_n1<_N1) -> ((_n1+1)<=X)
+Times to Translate
+7523
+>>> pre_condition=['X>=0']
+>>> post_condition=['m1==X**3']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+786
