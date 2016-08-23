@@ -46,7 +46,6 @@ _s.add(_N1>=0)
 _s.add(_N2>=0)
 _s.add(A>=0)
 _s.add(B>0)
-_s.add(_k1==0)
 _s.add(Not(r6(0) >= 0))
 if sat==_s.check():
 	print "Counter Example"
