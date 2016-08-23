@@ -49,7 +49,6 @@ _s.add(_N1>=0)
 _s.add(_N2>=0)
 _s.add(X>=0)
 _s.add(Y>0)
-_s.add(_k1==0)
 _s.add(Not(Implies(X==Y*q7(0) + r7(0))))
 if sat==_s.check():
 	print "Counter Example"
