@@ -1,0 +1,7 @@
+# Tower of Hanoi Moves
+
+file_name='benchmark/hanoi.java'
+axiom=translate(file_name)
+pre_condition=['x>0']
+post_condition=['h1==2**x-1']
+prove(axiom,pre_condition,post_condition)

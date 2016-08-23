@@ -1,0 +1,40 @@
+[  Info  ]  - Now considering 'postcondition' VC for hanoi @9:16...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call hanoi(x - 1))' VC for hanoi @8:19...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call power(2, x))' VC for hanoi @9:21...
+
+[  Info  ]  => VALID
+
+[  Info  ]  - Now considering 'precond. (call power(a, b - 1))' VC for power @15:17...
+
+[  Info  ]  => VALID
+
+[  Info  ]   +----------------------+
+
+[  Info  ] +-¦ Verification Summary ¦-------------------------------------------------------------------+
+
+[  Info  ] ¦ +----------------------+                                                                   ¦
+
+[  Info  ] ¦ hanoi.hanoi    postcondition                          9:16    valid   U:smt-z3       0.357 ¦
+
+[  Info  ] ¦ hanoi.hanoi    precond. (call hanoi(x - 1))           8:19    valid   U:smt-z3       0.032 ¦
+
+[  Info  ] ¦ hanoi.hanoi    precond. (call power(2, x))            9:21    valid   U:smt-z3       0.017 ¦
+
+[  Info  ] ¦ hanoi.power    precond. (call power(a, b - 1))        15:17   valid   U:smt-z3       0.024 ¦
+
+[  Info  ] ¦--------------------------------------------------------------------------------------------¦
+
+[  Info  ] ¦ total: 4      valid: 4      invalid: 0      unknown 0                                0.430 ¦
+
+[  Info  ] +--------------------------------------------------------------------------------------------+
+
+
+
+
+

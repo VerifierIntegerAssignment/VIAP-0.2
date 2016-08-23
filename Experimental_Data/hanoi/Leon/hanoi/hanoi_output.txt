@@ -1,0 +1,5 @@
+[  Info  ]  - Now considering 'postcondition' VC for hanoi @15:16...
+
+Waiting for 2 houres. Program did not terminate.
+
+

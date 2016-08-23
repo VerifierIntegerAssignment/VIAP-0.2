@@ -1,0 +1,39 @@
+>>> file_name='benchmark/geoReihe3.java'
+>>> axiom=translate(file_name)
+geoReihe3
+ Class Name:
+geoReihe3
+ Class Variables:
+{}
+Method Name:
+geoReihe3
+Return Type:
+void
+Input Variables:
+{ a:int K:int Z:int}
+Local Variables:
+{ c:int m:int l:int}
+All Variables:
+{ a:int c:int K:int m:int l:int Z:int}
+
+Output in normal notation:
+1. Frame axioms:
+a1 = a
+K1 = K
+Z1 = Z
+
+2. Output equations:
+c1 = (_N1+1)
+m1 = ((((((Z**_N1)*a)-((Z**_N1)*a))+((Z**(_N1+1))*a))-a)/(Z-1))
+l1 = ((Z**_N1)*1)
+
+3. Other axioms:
+(_N1>=(K-1))
+(_n1<_N1) -> ((_n1+1)<K)
+Times to Translate
+865
+>>> pre_condition=['K>0']
+>>> post_condition=['m1==((Z**(K)-1)/(Z-1))*a']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+1767

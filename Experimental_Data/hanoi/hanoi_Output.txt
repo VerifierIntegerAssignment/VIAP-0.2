@@ -1,0 +1,36 @@
+>>> file_name='benchmark/hanoi.java'
+>>> axiom=translate(file_name)
+hanoi
+ Class Name:
+hanoi
+ Class Variables:
+{}
+Method Name:
+hanoi
+Return Type:
+void
+Input Variables:
+{ x:int}
+Local Variables:
+{ i:int h:int}
+All Variables:
+{ i:int x:int h:int}
+
+Output in normal notation:
+1. Frame axioms:
+x1 = x
+
+2. Output equations:
+i1 = (_N1+1)
+h1 = ((((2**_N1)*1)+(2**_N1))-1)
+
+3. Other axioms:
+(_N1>=(-(1)+x))
+(_n1<_N1) -> ((_n1+1)<x)
+Times to Translate
+595
+>>> pre_condition=['x>0']
+>>> post_condition=['h1==2**x-1']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+800

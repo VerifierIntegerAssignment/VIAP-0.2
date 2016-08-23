@@ -1,0 +1,6 @@
+#Factorial
+file_name='benchmark/fact .java'
+axiom=translate(file_name)
+pre_condition=['X>=0']
+post_condition=['F1==factorial(X)']
+prove(axiom,pre_condition,post_condition)

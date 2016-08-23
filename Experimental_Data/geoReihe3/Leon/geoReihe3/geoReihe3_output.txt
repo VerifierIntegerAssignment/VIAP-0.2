@@ -1,0 +1,30 @@
+[  Info  ]  - Now considering 'postcondition' VC for geoReihe3 @18:16...
+[Warning ]  => INVALID
+[Warning ] Found counter-example:
+[Warning ]   K -> 1
+[Warning ]   Z -> 536870912
+[Warning ]   a -> 32
+[  Info  ]  - Now considering 'precond. (call geoReihe3(c, m, l, m, l, Z, K, a, c))' VC for geoReihe3 @10:9...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call power(Z, K))' VC for geoReihe3 @18:23...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'postcondition' VC for geoReihe3 @10:9...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call geoReihe3(c, m, l, m, l, Z, K, a, c))' VC for geoReihe3 @10:9...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call power(a, b - 1))' VC for power @24:17...
+[  Info  ]  => VALID
+[  Info  ]   ------------------------
+[  Info  ] --- Verification Summary -----------------------------------------------------------------------------------
+[  Info  ] - ------------------------                                                                                 -
+[  Info  ] - geoReihe3.geoReihe3  invariant inductive                                   10:9   valid    Z3-f    0.055 -
+[  Info  ] - geoReihe3.geoReihe3  invariant postcondition                               10:9   valid    Z3-f    0.383 -
+[  Info  ] - geoReihe3.geoReihe3  postcondition                                         18:16  invalid  Z3-f    0.706 -
+[  Info  ] - geoReihe3.geoReihe3  precond. (call geoReihe3(c, m, l, m, l, Z, K, a, c))  10:9   valid    Z3-f    0.042 -
+[  Info  ] - geoReihe3.geoReihe3  precond. (call power(Z, K))                           18:23  valid    Z3-f    0.065 -
+[  Info  ] - geoReihe3.power      precond. (call power(a, b - 1))                       24:17  valid    Z3-f    0.006 -
+[  Info  ] ------------------------------------------------------------------------------------------------------------
+[  Info  ] - total: 6      valid: 5      invalid: 1      unknown 0                                              1.257 -
+[  Info  ] ------------------------------------------------------------------------------------------------------------
+
+

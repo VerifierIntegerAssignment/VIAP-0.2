@@ -1,0 +1,30 @@
+[  Info  ]  - Now considering 'postcondition' VC for geoReihe2 @9:16...
+[Warning ]  => INVALID
+[Warning ] Found counter-example:
+[Warning ]   K -> 1
+[Warning ]   Z -> 211
+[  Info  ]  - Now considering 'precond. (call geoReihe2(Z, K - 1))' VC for geoReihe2 @8:17...
+[Warning ]  => INVALID
+[Warning ] Found counter-example:
+[Warning ]   K -> 1
+[Warning ]   Z -> 2
+[  Info  ]  - Now considering 'precond. (call power(Z, K))' VC for geoReihe2 @8:40...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call power(Z, K))' VC for geoReihe2 @9:23...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call power(a, b - 1))' VC for power @15:17...
+[  Info  ]  => VALID
+[  Info  ]   ------------------------
+[  Info  ] --- Verification Summary ---------------------------------------------------------------------
+[  Info  ] - ------------------------                                                                   -
+[  Info  ] - geoReihe2.geoReihe2   postcondition                         9:16    invalid  Z3-f    1.029 -
+[  Info  ] - geoReihe2.geoReihe2   precond. (call geoReihe2(Z, K - 1))   8:17    invalid  Z3-f    0.039 -
+[  Info  ] - geoReihe2.geoReihe2   precond. (call power(Z, K))           9:23    valid    Z3-f    0.095 -
+[  Info  ] - geoReihe2.geoReihe2   precond. (call power(Z, K))           8:40    valid    Z3-f    0.047 -
+[  Info  ] - geoReihe2.power       precond. (call power(a, b - 1))       15:17   valid    Z3-f    0.027 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+[  Info  ] - total: 5      valid: 3      invalid: 2      unknown 0                                1.237 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+
+
+
