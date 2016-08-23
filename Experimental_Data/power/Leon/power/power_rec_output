@@ -1,0 +1,43 @@
+[  Info  ]  - Now considering 'postcondition' VC for power @9:16...
+
+[Warning ]  => INVALID
+
+[Warning ] Found counter-example:
+
+[Warning ]   a -> 660144644
+
+[Warning ]   b -> 2
+
+[  Info  ]  - Now considering 'precond. (call power(a, b - 1))' VC for power @8:17...
+
+[  Info  ]  => VALID
+
+[  Info  ]   +----------------------+
+
+[  Info  ] +-¦ Verification Summary ¦-------------------------------------------------------------------+
+
+[  Info  ] ¦ +----------------------+                                                                   ¦
+
+[  Info  ] ¦ power.power    postcondition                         9:16   invalid   U:smt-z3       0.354 ¦
+
+[  Info  ] ¦ power.power    precond. (call power(a, b - 1))       8:17   valid     U:smt-z3       0.020 ¦
+
+[  Info  ] ¦--------------------------------------------------------------------------------------------¦
+
+[  Info  ] ¦ total: 2      valid: 1      invalid: 1      unknown 0                                0.374 ¦
+
+[  Info  ] +--------------------------------------------------------------------------------------------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

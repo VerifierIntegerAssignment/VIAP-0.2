@@ -1,0 +1,27 @@
+[  Info  ]  - Now considering 'postcondition' VC for product @9:16...
+[  Info  ]  => VALID
+[  Info  ]  - Now considering 'precond. (call product(a, b - 1))' VC for product @8:17...
+[  Info  ]  => VALID
+[  Info  ]   ------------------------
+[  Info  ] --- Verification Summary ---------------------------------------------------------------------
+[  Info  ] - ------------------------                                                                   -
+[  Info  ] - product.product     postcondition                            9:16   valid   Z3-f     1.371 -
+[  Info  ] - product.product     precond. (call product(a, b - 1))        8:17   valid   Z3-f     0.010 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+[  Info  ] - total: 2      valid: 2      invalid: 0      unknown 0                                1.381 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

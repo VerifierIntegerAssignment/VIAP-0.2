@@ -1,0 +1,37 @@
+>>> file_name='benchmark/product.java'
+>>> axiom=translate(file_name)
+product
+ Class Name:
+product
+ Class Variables:
+{}
+Method Name:
+product
+Return Type:
+void
+Input Variables:
+{ a:int b:int}
+Local Variables:
+{ A:int J:int}
+All Variables:
+{ a:int A:int J:int b:int}
+
+Output in normal notation:
+1. Frame axioms:
+a1 = a
+b1 = b
+
+2. Output equations:
+A1 = (0+(_N1*a))
+J1 = (0+_N1)
+
+3. Other axioms:
+(_N1>=(-(0)+b))
+(_n1<_N1) -> ((0+_n1)<b)
+Times to Translate
+535
+>>> pre_condition=['a>=0','b>=0']
+>>> post_condition=['A1==a*b']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+1137
