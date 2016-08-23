@@ -1,0 +1,12 @@
+[  Info  ]  - Now considering 'postcondition' VC for abs @7:20...
+[Warning ]  => INVALID
+[Warning ] Found counter-example:
+[Warning ]   X -> -2147483648
+[  Info  ]   ------------------------
+[  Info  ] --- Verification Summary ---------------------------------------------------------------------
+[  Info  ] - ------------------------                                                                   -
+[  Info  ] - abs.abs         postcondition                7:20       invalid         Z3-f         0.549 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+[  Info  ] - total: 1      valid: 0      invalid: 1      unknown 0                                0.549 -
+[  Info  ] ----------------------------------------------------------------------------------------------
+

@@ -1,0 +1,33 @@
+>>> file_name='benchmark/abs.java'
+>>> axiom=translate(file_name)
+abs
+ Class Name:
+abs
+ Class Variables:
+{}
+Method Name:
+abs
+Return Type:
+void
+Input Variables:
+{ X:int}
+Local Variables:
+{ a:int}
+All Variables:
+{ a:int X:int}
+
+Output in normal notation:
+1. Frame axioms:
+X1 = X
+
+2. Output equations:
+a1 = ite(X<=0,-(X),X)
+
+3. Other axioms:
+Times to Translate
+12
+>>> pre_condition=[]
+>>> post_condition=['a1>=0']
+>>> prove(axiom,pre_condition,post_condition)
+Successfully Proved
+234
