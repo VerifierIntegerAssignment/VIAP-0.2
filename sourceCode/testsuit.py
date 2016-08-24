@@ -99,7 +99,7 @@ prove(axiom,pre_condition,post_condition)
 
 # Tower of Hanoi Moves
 
-file_name='benchmark\hanoi.java'
+file_name='benchmark/hanoi.java'
 axiom=translate(file_name)
 pre_condition=['x>0']
 post_condition=['h1==2**x-1']
@@ -121,7 +121,7 @@ prove(axiom,pre_condition,post_condition)
 
 #exponential
 
-file_name='benchmark\power.java'
+file_name='benchmark/power.java'
 axiom=translate(file_name)
 pre_condition=['a>=0','b>=0']
 post_condition=['P1==a**b']
@@ -129,7 +129,7 @@ prove(axiom,pre_condition,post_condition)
 
 #Product of two numbers
 
-file_name='benchmark\product.java'
+file_name='benchmark/product.java'
 axiom=translate(file_name)
 pre_condition=['a>=0','b>=0']
 post_condition=['A1==a*b']
@@ -222,7 +222,7 @@ prove(axiom,pre_condition,post_condition)
 
 #Square of a number
 
-file_name='benchmark\square.java'
+file_name='benchmark/square.java'
 axiom=translate(file_name)
 
 pre_condition=['M>=0']
