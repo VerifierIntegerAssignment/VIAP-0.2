@@ -17,7 +17,6 @@ public class geoReihe2{
     			 l = l*Z;
   		}
 
-  		m = m *(Z -1);
-	}
+  	}
 
 }
