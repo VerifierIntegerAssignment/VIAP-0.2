@@ -1,6 +1,6 @@
 method geoReihe2(Z: int,K:int) returns (m: int)
 requires Z>1 && K>0
-ensures m == ((power(Z,K)-1)/(Z-1))*(Z-1);
+ensures m == ((power(Z,K)-1)/(Z-1));
 {
     m := 1;    
     var l: int := 1;
