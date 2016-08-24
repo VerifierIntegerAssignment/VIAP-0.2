@@ -3944,7 +3944,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				updated_equation.append(variable+">=0")
 				#updated_equation.append(inductiveassum)
 				writeLogFile( "j2llogs.logs" ,"\nInductive Step \n"+str(inductivestep)+"\n" )
-				#status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
+				status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
 				###status=query2z3(updated_equation,str(inductivestep),vfact,inputmap)
 				writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 				if "Successfully Proved" in status:
@@ -3957,7 +3957,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 						case_status=False
 						for case in case_list:
 							inductivestep='Implies(And('+str(inductiveassum)+','+case+'),'+case_temp_inductivestep+')'
-							#status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
+							status=query2z3(updated_equation,str(inductivestep),update_vfact,inputmap)
 							if "Successfully Proved" in status:
 								case_status=True
 							else:
