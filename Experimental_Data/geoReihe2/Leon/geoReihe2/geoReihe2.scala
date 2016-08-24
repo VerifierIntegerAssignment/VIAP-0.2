@@ -13,7 +13,7 @@ object geoReihe2 {
 	    l = l*Z
 	 }
 	
-  		m = m *(Z -1);
+  
       m
     })ensuring(_ == ((power(Z,K)-1)/(Z-1))*(Z-1)) 
 
