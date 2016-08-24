@@ -18,9 +18,10 @@ object geoReihe3 {
     })ensuring(_ == ((power(Z,K)-1)/(Z-1))*a) 
 
 
-     def power(a: Int,b: Int): Int = { 
+ def power(a: Int,b: Int): Int = { 
         require(a >= 0 && b >= 0)
-        if (b == 0) 1
+        if (a == 0 && b>0) 0
+        else if (b == 0) 1
         else    power(a,b-1)*a
     }
 
