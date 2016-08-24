@@ -86,7 +86,7 @@ prove(axiom,pre_condition,post_condition)
 file_name='benchmark/geoReihe2.java'
 axiom=translate(file_name)
 pre_condition=['K>0','Z>1']
-post_condition=['m1==((Z**(K)-1)/(Z-1))*(Z-1)']
+post_condition=['m1==((Z**(K)-1)/(Z-1))']
 prove(axiom,pre_condition,post_condition)
 
 # geometric series 3
