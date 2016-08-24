@@ -15,7 +15,7 @@ object geoReihe2 {
 	
   
       m
-    })ensuring(_ == ((power(Z,K)-1)/(Z-1))*(Z-1)) 
+    })ensuring(_ == ((power(Z,K)-1)/(Z-1))) 
 
 
      def power(a: Int,b: Int): Int = { 
