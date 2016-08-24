@@ -11,7 +11,7 @@ ensures m == ((power(Z,K)-1)/(Z-1))*(Z-1);
     			 m := m*Z + 1;
     			 l := l*Z;
     }
-    m := m *(Z -1);
+   
 }
 
 function power(a: int,b: int) : int
