@@ -14,6 +14,6 @@ function power(a: int,b: int) : int
 requires a>=0
 requires b>=0
 {
-        if (b == 0) then 1 else power(a,b-1)*a
+            if (a == 0 && b>0) then 0 else if (b == 0) then 1 else power(a,b-1)*a
 }
 
