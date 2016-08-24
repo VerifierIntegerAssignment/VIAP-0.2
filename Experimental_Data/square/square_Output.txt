@@ -31,7 +31,7 @@ Times to Translate
 565
 >>> 
 >>> pre_condition=['M>=0']
->>> post_condition=['s1==M*M']
+>>> post_condition=['s1==M**2']
 >>> prove(axiom,pre_condition,post_condition)
 Successfully Proved
 1073
