@@ -2,7 +2,8 @@
 [Warning ]  => INVALID
 [Warning ] Found counter-example:
 [Warning ]   K -> 2
-[Warning ]   Z -> 117366927
+[Warning ]   Z -> 2632424
+
 [  Info  ]  - Now considering 'precond. (call geoReihe2(c, m, l, m, c, Z, K, l))' VC for geoReihe2 @10:9...
 [  Info  ]  => VALID
 [  Info  ]  - Now considering 'precond. (call power(Z, K))' VC for geoReihe2 @18:23...
