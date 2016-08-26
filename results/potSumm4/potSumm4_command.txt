@@ -1,7 +1,0 @@
-file_name='benchmark/potSumm4.java'
-axiom=translate(file_name)
-
-pre_condition=['K>=0']
-post_condition=['l1==K*(K+1)*K*(K+1)/4']
-flag=1
-prove(axiom,pre_condition,post_condition,flag)
