@@ -1949,7 +1949,14 @@ def convert_pow_op_fun(expression):
 
 
 def simplify_sympy(expression):
-	expression_mod=powsimp(expression)
+        if '/' in str(expression) and '>' not in str(expression) and '<' not in str(expression) and '=' not in str(expression):
+        	expression,flag=expressionChecking(expression)
+        	if flag==True:
+        		expression_mod=expression 
+        	else:
+        		expression_mod=powsimp(expression)
+        else:
+            expression_mod=powsimp(expression)
 	if '/' not in str(expression_mod):
 		expression=expression_mod
 	if '/' in str(expression):
@@ -1957,7 +1964,13 @@ def simplify_sympy(expression):
 		no=sympify(no).expand(basic=True)
 		deno=sympify(deno).expand(basic=True)
 		if deno==1:
-			return pow_to_mul(powsimp(no))
+			expression,flag=expressionChecking(expression)
+			if flag==True:
+				return expression
+				#return pow_to_mul(powsimp(expression))
+			else:
+				return pow_to_mul(powsimp(expression))
+			#return pow_to_mul(powsimp(no))
 		else:
                  	return Mul(pow_to_mul(powsimp(no)), Pow(pow_to_mul(powsimp(deno)), -1), evaluate=False)
 	
@@ -2279,7 +2292,7 @@ def recurreSolver_wolframalpha(righthandstmt,righthandstmt_base,variable_list):
 	    	for x in var_map.keys():
 	    		results[1]=results[1].replace(var_map[x],x)	
 	    	try:
-
+			temp=simplify(results[1])
 	    		finalResult=str(simplify_expand_sympy(results[1]))
 	    		writeLogFile( "j2llogs.logs" , "\nEquation Pass to Wolfram Mathematica  \n"+str(query1)+"------Base Case---"+str(query2)+"\n" )
 	    		writeLogFile( "j2llogs.logs" , "\nClosed form solution return by Wolfram Mathematica \n"+str(finalResult)+"\n" )
@@ -2754,6 +2767,8 @@ def programToinductiveDefination(expressions, allvariable):
 					programsstart=predicatestmt+programsend
 				else:
 					programsstart+=","+predicatestmt+programsend
+	if programsstart[0]==',':
+		programsstart=programsstart[1:]	
 	return programsstart		
 
 
@@ -3598,7 +3613,27 @@ def simplify_conclusion(conclusion,subs_list):
 				return conclusion
 			else:
 				axm=conclusion.split('==')
-				conclusion=str(simplify_sympy(axm[0]).subs(subs_list))+'=='+str(simplify_sympy(axm[1]).subs(subs_list))
+				left_side=None
+				right_side=None
+				conclusion=None
+				if isinstance(simplify_sympy(axm[0]), (str, unicode)) or isinstance(simplify_sympy(axm[1]), (str, unicode)):
+					left_side=str(simplify_sympy(axm[0]))
+					for element in subs_list.keys():
+						left_side=left_side.replace(str(element),str(subs_list[element]))
+					right_side=str(simplify_sympy(axm[1]))
+					for element in subs_list.keys():
+						right_side=right_side.replace(str(element),str(subs_list[element]))
+				else:
+					left_side=str(simplify_sympy(axm[0]))
+					for element in subs_list.keys():
+						left_side=left_side.replace(str(element),str(subs_list[element]))
+					right_side=str(simplify_sympy(axm[1]))
+					for element in subs_list.keys():
+						right_side=right_side.replace(str(element),str(subs_list[element]))
+					#left_side=str(simplify_sympy(axm[0]).subs(subs_list))
+					#right_side=str(simplify_sympy(axm[1]).subs(subs_list))
+				if left_side is not None and right_side is not None:
+					conclusion=left_side+'=='+right_side
 				return conclusion
 
 """
@@ -3870,8 +3905,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					update_vfact.append([x,k,l])
 			else:
 				update_vfact.append([x,k,l])
-		
-	
+
 		for x in const_map:
 			variable=var_const_map[const_map[x]]			
 			constant=x
@@ -3963,9 +3997,13 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 							else:
 								case_status=False
 								break
+						
+					
 						if case_status==True:
+                                                        writeLogFile( "j2llogs.logs" , "\nResult \n"+str(status)+"\n" )
 							return "Successfully Proved"
 						else:
+
 							return "Failed to Prove"
 					else:
 						return "Failed to Prove"
@@ -3973,3 +4011,76 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				return status
 			else:
 				return "Failed to Prove"
+		return "Failed to Prove"
+
+#Stack Implementaion 
+
+class Stack:
+     def __init__(self):
+         self.items = []
+
+     def isEmpty(self):
+         return self.items == []
+
+     def push(self, item):
+         self.items.append(item)
+
+     def pop(self):
+         return self.items.pop()
+
+     def peek(self):
+         return self.items[len(self.items)-1]
+
+     def size(self):
+         return len(self.items)
+
+#expression="(A+B+((Z**(K)-1)/(Z-1))*(Z-1))"
+expression="((Z**(K)-1)/(Z-1))*(Z-1)"
+#expressionChecking(expression)
+def expressionChecking(expression):
+	if '(((((((' not in str(expression):
+		if "**" in str(expression):
+			expression=translatepowerToFun(str(expression))
+		p = getParser()
+		tree = p.parse_expression(expression)
+		expr_wff=eval(expressionCreator(tree)) 
+		flag=False
+		return expr2simplified(expr_wff,flag)
+	else:
+		return str(expression),False
+
+
+
+#wff to Simplified Expression
+def expr2simplified(e,flag):
+    args=expr_args(e)
+    op=expr_op(e)
+    if len(args)==0:
+        return op,flag
+    else:
+	if op in _infix_op and len(args)==2:
+	    expr1,flag=expr2simplified(args[0],flag)
+	    if flag==True:
+	    	expr2,flag=expr2simplified(args[1],flag)
+	    	flag=True
+	    else:
+	    	expr2,flag=expr2simplified(args[1],flag)
+	    if op=='*' and expr_op(args[0])=='/':
+	    	n,d=fraction(expr1)
+	    	if gcd(d,expr2)!=1:
+	    		flag=True
+	    elif op=='/' and expr_op(args[0])=='*':
+	    	n,d=fraction(expr2)
+	    	if gcd(expr1,d)!=1:
+	    		flag=True
+            if flag==True:
+            	expression= '(' + expr1+ op + expr2 +')' 
+            else:
+            	expression= '((' + str(pow_to_mul(powsimp(expr1)))+ ')'+ op + '('+ str(pow_to_mul(powsimp(expr2)))+'))' 
+            return expression,flag
+        else:
+            return op +'('+ ','.join(list(trim_p(expr2string1(x)) for x in args))+ ')',flag
+        	
+
+
+		
