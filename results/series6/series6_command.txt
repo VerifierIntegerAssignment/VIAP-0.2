@@ -1,5 +1,0 @@
-file_name='benchmark/series6.java'
-pre_condition=['X>=0']
-post_condition=['sum1==(6*X**7+21*X**6+21*X**5-7*X**3+X)/42']
-flag=1
-prove(file_name,pre_condition,post_condition,flag)
