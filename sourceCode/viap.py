@@ -1949,7 +1949,8 @@ def convert_pow_op_fun(expression):
 
 
 def simplify_sympy(expression):
-        if '/' in str(expression) and '>' not in str(expression) and '<' not in str(expression) and '=' not in str(expression):
+        #if '/' in str(expression) and '>' not in str(expression) and '<' not in str(expression) and '=' not in str(expression):
+        if '/' in str(expression):
         	expression,flag=expressionChecking(expression)
         	if flag==True:
         		expression_mod=expression 
@@ -3609,7 +3610,17 @@ def simplify_conclusion(conclusion,subs_list):
 			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
 		else:
 			if '==' not in conclusion and '!=' not in conclusion:
-				conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
+				if '/' in str(conclusion):
+					modified_conclusion=str(simplify_sympy(conclusion))
+					if '/' in modified_conclusion:
+						for element in subs_list.keys():
+							modified_conclusion=modified_conclusion.replace(str(element),str(subs_list[element]))
+						#conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
+						conclusion=modified_conclusion
+					else:
+						conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
+				else:
+					conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
 				return conclusion
 			elif '!=' in conclusion:
 				axm=conclusion.split('!=')
@@ -4006,9 +4017,14 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 								
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
 			else:
-				invariantstmt=simplify(conclusion).subs(constant,variable)
-				invariantstmtdisplay=simplify(conclusion).subs(constant,const_map[x])
-				basecasestmt=simplify(invariantstmt).subs(variable,0)
+				if '/' in conclusion:
+					invariantstmt=simplify(conclusion).subs(constant,variable)
+					invariantstmtdisplay=simplify(conclusion).subs(constant,const_map[x])
+					basecasestmt=simplify(invariantstmt).subs(variable,0)
+				else:
+					invariantstmt=conclusion.replace(constant,variable)
+					invariantstmtdisplay=conclusion.replace(constant,const_map[x])
+					basecasestmt=invariantstmt.replace(variable,'0')
 			print " Try to prove following using induction on "+const_map[x]
 			print "ForAll("+const_map[x]+","+str(invariantstmtdisplay)+")"
 			print "Base Case"
@@ -4125,14 +4141,27 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				
 							
 				else:
-					inductiveassum=simplify(invariantstmt)
-					inductivestep=simplify(invariantstmt).subs(variable,variable+"+1")
-					ind_def_map=eqset2subs_list_ind(a)
-					temp_inductivestep=str(inductivestep)
-					for i_e in ind_def_map:
-						temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
-					case_temp_inductivestep=temp_inductivestep
-					inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
+					if '/' in invariantstmt:
+						inductiveassum=simplify_sympy(invariantstmt)
+						inductivestep=simplify_sympy(invariantstmt).replace(variable,variable+"+1")
+						ind_def_map=eqset2subs_list_ind(a)
+						temp_inductivestep=str(inductivestep)
+						for i_e in ind_def_map:
+							temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
+						case_temp_inductivestep=temp_inductivestep
+						inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
+					else:
+						inductiveassum=simplify(invariantstmt)
+						inductivestep=simplify(invariantstmt).subs(variable,variable+"+1")
+						ind_def_map=eqset2subs_list_ind(a)
+						temp_inductivestep=str(inductivestep)
+						for i_e in ind_def_map:
+							temp_inductivestep=sub_ind_def(temp_inductivestep,sub_ind_def(str(i_e),loop_var,variable),sub_ind_def(str(ind_def_map[i_e]),loop_var,variable))
+						case_temp_inductivestep=temp_inductivestep
+						inductivestep='Implies('+str(inductiveassum)+','+temp_inductivestep+')'
+
+					
+					
 				for equation in constraint_list:
 					updated_equation.append(equation)
 				updated_equation.append(variable+">=0")
@@ -4196,6 +4225,8 @@ class Stack:
 
 #expression="(A+B+((Z**(K)-1)/(Z-1))*(Z-1))"
 expression="((Z**(K)-1)/(Z-1))*(Z-1)"
+expression="(Z/2)*2<=Z"
+expression="r6(_n2)>=(((2**-(_n2))*((2**_N1)*B))/2)"
 #expressionChecking(expression)
 def expressionChecking(expression):
 	if '(((((((' not in str(expression):
