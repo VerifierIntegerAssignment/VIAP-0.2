@@ -1,6 +1,0 @@
-file_name='benchmark/sumeven.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==X*(X+1)']
-flag=1
-prove(axiom,pre_condition,post_condition,flag)
