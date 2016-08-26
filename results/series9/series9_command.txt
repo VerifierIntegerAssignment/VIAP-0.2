@@ -1,6 +1,0 @@
-file_name='benchmark/series9.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==(2*X**10+10*X**9+15*X**8-14*X**6+10*X**4-3*X**2)/20']
-flag=1
-prove(axiom,pre_condition,post_condition,flag)
