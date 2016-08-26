@@ -3515,7 +3515,7 @@ expr <<= arith_expr.setParseAction(lambda t: '(%s)' % ''.join(t))
 
 def translatepowerToFun(expression):
     if "**" in expression:
-	if "<" in  expression or ">" in  expression:
+	if ("<" in  expression or ">" in  expression) and '/' not in expression :
             expression=simplify(expression)
     	expression=transferToFunctionSyntax(str(expression))
     	xform = expr.transformString(expression)[1:-1]
@@ -3523,6 +3523,8 @@ def translatepowerToFun(expression):
     	expression=xform.replace(']',')')
    	#print expression
     return expression
+ 
+ 
  
 
 """
@@ -3610,17 +3612,11 @@ def simplify_conclusion(conclusion,subs_list):
 			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
 		else:
 			if '==' not in conclusion and '!=' not in conclusion:
-				if '/' in str(conclusion):
-					modified_conclusion=str(simplify_sympy(conclusion))
-					if '/' in modified_conclusion:
-						for element in subs_list.keys():
-							modified_conclusion=modified_conclusion.replace(str(element),str(subs_list[element]))
-						#conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
-						conclusion=modified_conclusion
-					else:
-						conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
-				else:
-					conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
+				modified_conclusion=conclusion
+				for element in subs_list.keys():
+					modified_conclusion=str(modified_conclusion).replace(str(element),str(subs_list[element]))
+				conclusion=modified_conclusion
+				#conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
 				return conclusion
 			elif '!=' in conclusion:
 				axm=conclusion.split('!=')
@@ -3881,7 +3877,6 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 		if "factorial" in conclusion:
 			cfact=eval("['factorial',1,['int','int']]")
 			vfact.append(cfact)
-
 		status=query2z3(constraint_list,conclusion,vfact,inputmap)
 		writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
 		if "Successfully Proved" in status:
@@ -4017,14 +4012,16 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 								
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
 			else:
-				if '/' in conclusion:
-					invariantstmt=simplify(conclusion).subs(constant,variable)
-					invariantstmtdisplay=simplify(conclusion).subs(constant,const_map[x])
-					basecasestmt=simplify(invariantstmt).subs(variable,0)
-				else:
+				
+				if '/' in str(conclusion):
 					invariantstmt=conclusion.replace(constant,variable)
 					invariantstmtdisplay=conclusion.replace(constant,const_map[x])
 					basecasestmt=invariantstmt.replace(variable,'0')
+				else:
+					invariantstmt=simplify(conclusion).subs(constant,variable)
+					invariantstmtdisplay=simplify(conclusion).subs(constant,const_map[x])
+					basecasestmt=simplify(invariantstmt).subs(variable,0)
+					
 			print " Try to prove following using induction on "+const_map[x]
 			print "ForAll("+const_map[x]+","+str(invariantstmtdisplay)+")"
 			print "Base Case"
@@ -4054,7 +4051,10 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=simplify(exp[1]).subs(variable,0)
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
 			else:
-				basecasestmt=simplify(invariantstmt).subs(variable,0)
+				if '/' in str(basecasestmt):
+					basecasestmt=invariantstmt.replace(variable,'0')
+				else:
+					basecasestmt=simplify(invariantstmt).subs(variable,0)
 			print basecasestmt
 			writeLogFile( "j2llogs.logs" , "\nBase Case \n"+str(basecasestmt)+"\n" )
 			status=query2z3(constraint_list,str(basecasestmt),update_vfact,inputmap)
@@ -4141,7 +4141,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				
 							
 				else:
-					if '/' in invariantstmt:
+					if '/' in str(invariantstmt):
 						inductiveassum=simplify_sympy(invariantstmt)
 						inductivestep=simplify_sympy(invariantstmt).replace(variable,variable+"+1")
 						ind_def_map=eqset2subs_list_ind(a)
@@ -4223,6 +4223,16 @@ class Stack:
      def size(self):
          return len(self.items)
 
+
+def translatepowerToFunCheck(expression):
+    if "**" in expression:
+    	expression=transferToFunctionSyntax(str(expression))
+    	xform = expr.transformString(expression)[1:-1]
+    	xform=xform.replace('[','(')
+    	expression=xform.replace(']',')')
+   	#print expression
+    return expression
+
 #expression="(A+B+((Z**(K)-1)/(Z-1))*(Z-1))"
 expression="((Z**(K)-1)/(Z-1))*(Z-1)"
 expression="(Z/2)*2<=Z"
@@ -4231,7 +4241,7 @@ expression="r6(_n2)>=(((2**-(_n2))*((2**_N1)*B))/2)"
 def expressionChecking(expression):
 	if '(((((((' not in str(expression):
 		if "**" in str(expression):
-			expression=translatepowerToFun(str(expression))
+			expression=translatepowerToFunCheck(str(expression))
 		p = getParser()
 		tree = p.parse_expression(expression)
 		expr_wff=eval(expressionCreator(tree)) 
