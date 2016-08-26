@@ -3608,9 +3608,34 @@ def simplify_conclusion(conclusion,subs_list):
 			arg_list=extract_args(conclusion)
 			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
 		else:
-			if '==' not in conclusion:
+			if '==' not in conclusion and '!=' not in conclusion:
 				conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
 				return conclusion
+			elif '!=' in conclusion:
+				axm=conclusion.split('!=')
+				left_side=None
+				right_side=None
+				conclusion=None
+				if isinstance(simplify_sympy(axm[0]), (str, unicode)) or isinstance(simplify_sympy(axm[1]), (str, unicode)):
+					left_side=str(simplify_sympy(axm[0]))
+					for element in subs_list.keys():
+						left_side=left_side.replace(str(element),str(subs_list[element]))
+					right_side=str(simplify_sympy(axm[1]))
+					for element in subs_list.keys():
+						right_side=right_side.replace(str(element),str(subs_list[element]))
+				else:
+					left_side=str(simplify_sympy(axm[0]))
+					for element in subs_list.keys():
+						left_side=left_side.replace(str(element),str(subs_list[element]))
+					right_side=str(simplify_sympy(axm[1]))
+					for element in subs_list.keys():
+						right_side=right_side.replace(str(element),str(subs_list[element]))
+					#left_side=str(simplify_sympy(axm[0]).subs(subs_list))
+					#right_side=str(simplify_sympy(axm[1]).subs(subs_list))
+				if left_side is not None and right_side is not None:
+					conclusion='Not('+left_side+'=='+right_side+')'
+				return conclusion
+			
 			else:
 				axm=conclusion.split('==')
 				left_side=None
@@ -3796,7 +3821,11 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 	for equation in constraint_list:
 		pythonProgram+="_s.add("+str(equation)+")\n"
 	finalProgram=pythonProgram
-	finalProgram+="_s.add(Not("+str(translatepowerToFun(conclusion))+"))\n"
+	if 'Not(' in conclusion:
+		arg_list=extract_args(conclusion)
+		finalProgram+="_s.add(Not(Not("+str(translatepowerToFun(arg_list[0]))+")))\n"
+	else:
+		finalProgram+="_s.add(Not("+str(translatepowerToFun(conclusion))+"))\n"
 	finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tif os.path.isfile(\'j2llogs.logs\'):\n"+"\t\tfile = open(\'j2llogs.logs\', \'a\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\telse:\n"+"\t\tfile = open(\'j2llogs.logs\', \'w\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#print finalProgram
@@ -3836,11 +3865,12 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
         	constraint_list.append(x)
 	for conclusion in conclusions:
 		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
-		conclusion=simplify_conclusion(conclusion,subs_list)	
+		conclusion=simplify_conclusion(conclusion,subs_list)
+		
 		if "factorial" in conclusion:
 			cfact=eval("['factorial',1,['int','int']]")
 			vfact.append(cfact)
-		
+
 		status=query2z3(constraint_list,conclusion,vfact,inputmap)
 		writeLogFile( "j2llogs.logs" ,"\nResult \n"+str(status)+"\n" )
 		if "Successfully Proved" in status:
@@ -3910,14 +3940,70 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			variable=var_const_map[const_map[x]]			
 			constant=x
 			loop_var=const_map[x]
+			if 'Not(' in conclusion:
+				arg_list=extract_args(conclusion)
+				conclusion=arg_list[0]
+				conclusion=conclusion.replace('==','!=')
+
+			
 			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion):
 				exp=str(conclusion).split('==')
-				invariantstmtdisplay=str(simplify(exp[0]).subs(constant,const_map[x]))+"=="+str(simplify(exp[1]).subs(constant,const_map[x]))
-				exp[0]=simplify(exp[0]).subs(constant,variable)
-				exp[1]=simplify(exp[1]).subs(constant,variable)
+				invariantstmtdisplay_left=None
+				invariantstmtdisplay_right=None
+				if '/' in str(exp[0]):
+					invariantstmtdisplay_left=exp[0].replace(constant,const_map[x])
+					exp[0]=exp[0].replace(constant,variable)
+				else:
+					invariantstmtdisplay_left=str(simplify(exp[0]).subs(constant,const_map[x]))
+					exp[0]=simplify(exp[0]).subs(constant,variable)
+				if '/' in str(exp[1]):
+					invariantstmtdisplay_right=exp[1].replace(constant,const_map[x])
+					exp[1]=exp[1].replace(constant,variable)
+				else:
+					invariantstmtdisplay_right=str(simplify(exp[1]).subs(constant,const_map[x]))
+					exp[1]=simplify(exp[1]).subs(constant,variable)
+				
+				invariantstmtdisplay=invariantstmtdisplay_left+"=="+invariantstmtdisplay_right				
 				invariantstmt=str(exp[0])+"=="+str(exp[1])
-				exp[0]=simplify(exp[0]).subs(variable,0)
-				exp[1]=simplify(exp[1]).subs(variable,0)
+				if '/' in str(exp[0]):
+					exp[0]=exp[0].replace(variable,'0')
+				else:
+					exp[0]=simplify(exp[0]).subs(variable,0)
+					
+				if '/' in str(exp[1]):
+					exp[1]=exp[1].replace(variable,'0')
+				else:
+					exp[1]=simplify(exp[1]).subs(variable,0)
+					
+				basecasestmt=str(exp[0])+"=="+str(exp[1])
+			elif '!=' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and 'ite' not in str(conclusion):
+				exp=str(conclusion).split('!=')
+				invariantstmtdisplay_left=None
+				invariantstmtdisplay_right=None
+				if '/' in str(exp[0]):
+					invariantstmtdisplay_left=exp[0].replace(constant,const_map[x])
+					exp[0]=exp[0].replace(constant,variable)
+				else:
+					invariantstmtdisplay_left=str(simplify(exp[0]).subs(constant,const_map[x]))
+					exp[0]=simplify(exp[0]).subs(constant,variable)
+				if '/' in str(exp[1]):
+					invariantstmtdisplay_right=exp[1].replace(constant,const_map[x])
+					exp[1]=exp[1].replace(constant,variable)
+				else:
+					invariantstmtdisplay_right=str(simplify(exp[1]).subs(constant,const_map[x]))
+					exp[1]=simplify(exp[1]).subs(constant,variable)
+							
+				invariantstmtdisplay='Not('+invariantstmtdisplay_left+"=="+invariantstmtdisplay_right+')'			
+				invariantstmt=str(exp[0])+"!="+str(exp[1])
+				if '/' in str(exp[0]):
+					exp[0]=exp[0].replace(variable,'0')
+				else:
+					exp[0]=simplify(exp[0]).subs(variable,0)
+				if '/' in str(exp[1]):
+					exp[1]=exp[1].replace(variable,'0')
+				else:
+					exp[1]=simplify(exp[1]).subs(variable,0)
+								
 				basecasestmt=str(exp[0])+"=="+str(exp[1])
 			else:
 				invariantstmt=simplify(conclusion).subs(constant,variable)
@@ -3928,9 +4014,29 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			print "Base Case"
 			if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
 				exp=str(invariantstmt).split('==')
-				exp[0]=simplify(exp[0]).subs(variable,0)
-				exp[1]=simplify(exp[1]).subs(variable,0)
+				if '/' in str(exp[0]):
+					exp[0]=exp[0].replace(variable,'0')
+				else:
+					exp[0]=simplify(exp[0]).subs(variable,0)
+					
+				if '/' in str(exp[1]):
+					exp[1]=exp[1].replace(variable,'0')
+				else:
+					exp[1]=simplify(exp[1]).subs(variable,0)
 				basecasestmt=str(exp[0])+"=="+str(exp[1])
+			
+			elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
+				exp=str(invariantstmt).split('!=')
+				if '/' in str(exp[0]):
+					exp[0]=exp[0].replace(variable,'0')
+				else:
+					exp[0]=simplify(exp[0]).subs(variable,0)
+								
+				if '/' in str(exp[1]):
+					exp[1]=exp[1].replace(variable,'0')
+				else:
+					exp[1]=simplify(exp[1]).subs(variable,0)
+				basecasestmt='Not('+str(exp[0])+"=="+str(exp[1])+')'
 			else:
 				basecasestmt=simplify(invariantstmt).subs(variable,0)
 			print basecasestmt
@@ -3953,17 +4059,71 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				updated_vfact=[]
 				if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
 					exp=str(invariantstmt).split('==')
-					lexp=simplify(exp[0])
-					rexp=simplify(exp[1])
+					
+					lexp=None
+					rexp=None
+					if '/' not in str(exp[0]):
+						lexp=simplify(exp[0])
+					else:
+						lexp=exp[0]
+					if '/' not in str(exp[1]):
+						rexp=simplify(exp[1])
+					else:
+						rexp=exp[1]
 					inductiveassum=str(lexp)+"=="+str(rexp)
-					lexp=simplify(exp[0]).subs(variable,variable+"+1")
-					rexp=simplify(exp[1]).subs(variable,variable+"+1")
+					
+					
+					if '/' not in str(exp[0]):
+						lexp=simplify(exp[0]).subs(variable,variable+"+1")
+					else:
+						lexp=exp[0].replace(variable,variable+"+1")
+						
+					if '/' not in str(exp[1]):
+						rexp=simplify(exp[1]).subs(variable,variable+"+1")
+					else:
+						rexp=exp[1].replace(variable,variable+"+1")				
+					
 					ind_def_map=eqset2subs_list_ind(a)
 					for i_e in ind_def_map:
                                             lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
                                             rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
 					case_temp_inductivestep=str(lexp)+"=="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
+				
+				elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt)  and 'ite' not in str(invariantstmt):
+					exp=str(invariantstmt).split('==')
+					
+					lexp=None
+					rexp=None
+					if '/' not in str(exp[0]):
+						lexp=simplify(exp[0])
+					else:
+						lexp=exp[0]
+					if '/' not in str(exp[1]):
+						rexp=simplify(exp[1])
+					else:
+						rexp=exp[1]
+					inductiveassum='Not('+str(lexp)+"=="+str(rexp)+')'
+					
+					
+					if '/' not in str(exp[0]):
+						lexp=simplify(exp[0]).subs(variable,variable+"+1")
+					else:
+						lexp=exp[0].replace(variable,variable+"+1")
+						
+					if '/' not in str(exp[1]):
+						rexp=simplify(exp[1]).subs(variable,variable+"+1")
+					else:
+						rexp=exp[1].replace(variable,variable+"+1")				
+					
+					ind_def_map=eqset2subs_list_ind(a)
+					for i_e in ind_def_map:
+                                            lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+                                            rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
+					case_temp_inductivestep='Not('+str(lexp)+"=="+str(rexp)+')'
+					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
+				
+							
 				else:
 					inductiveassum=simplify(invariantstmt)
 					inductivestep=simplify(invariantstmt).subs(variable,variable+"+1")
