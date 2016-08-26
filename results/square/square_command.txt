@@ -1,7 +1,0 @@
-file_name='benchmark\square.java'
-axiom=translate(file_name)
-
-pre_condition=['M>=0']
-post_condition=['s1==M*M']
-flag=1
-prove(axiom,pre_condition,post_condition,flag)
