@@ -1,6 +1,0 @@
-file_name='benchmark/series3.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==X*(X+1)*X*(X+1)/4']
-flag=1
-prove(axiom,pre_condition,post_condition,flag)
