@@ -3633,7 +3633,7 @@ def simplify_conclusion(conclusion,subs_list):
 					#left_side=str(simplify_sympy(axm[0]).subs(subs_list))
 					#right_side=str(simplify_sympy(axm[1]).subs(subs_list))
 				if left_side is not None and right_side is not None:
-					conclusion='Not('+left_side+'=='+right_side+')'
+					conclusion=left_side+'!='+right_side
 				return conclusion
 			
 			else:
@@ -3943,7 +3943,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			if 'Not(' in conclusion:
 				arg_list=extract_args(conclusion)
 				conclusion=arg_list[0]
-				conclusion=conclusion.replace('==','!=')
+				#conclusion=conclusion.replace('==','!=')
 
 			
 			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion):
@@ -3993,7 +3993,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					invariantstmtdisplay_right=str(simplify(exp[1]).subs(constant,const_map[x]))
 					exp[1]=simplify(exp[1]).subs(constant,variable)
 							
-				invariantstmtdisplay='Not('+invariantstmtdisplay_left+"=="+invariantstmtdisplay_right+')'			
+				invariantstmtdisplay=invariantstmtdisplay_left+"!="+invariantstmtdisplay_right			
 				invariantstmt=str(exp[0])+"!="+str(exp[1])
 				if '/' in str(exp[0]):
 					exp[0]=exp[0].replace(variable,'0')
@@ -4004,7 +4004,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				else:
 					exp[1]=simplify(exp[1]).subs(variable,0)
 								
-				basecasestmt=str(exp[0])+"=="+str(exp[1])
+				basecasestmt=str(exp[0])+"!="+str(exp[1])
 			else:
 				invariantstmt=simplify(conclusion).subs(constant,variable)
 				invariantstmtdisplay=simplify(conclusion).subs(constant,const_map[x])
@@ -4036,7 +4036,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=exp[1].replace(variable,'0')
 				else:
 					exp[1]=simplify(exp[1]).subs(variable,0)
-				basecasestmt='Not('+str(exp[0])+"=="+str(exp[1])+')'
+				basecasestmt=str(exp[0])+"!="+str(exp[1])
 			else:
 				basecasestmt=simplify(invariantstmt).subs(variable,0)
 			print basecasestmt
@@ -4103,7 +4103,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 						rexp=simplify(exp[1])
 					else:
 						rexp=exp[1]
-					inductiveassum='Not('+str(lexp)+"=="+str(rexp)+')'
+					inductiveassum=str(lexp)+"!="+str(rexp)
 					
 					
 					if '/' not in str(exp[0]):
@@ -4120,7 +4120,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					for i_e in ind_def_map:
                                             lexp=sub_ind_def(str(lexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
                                             rexp=sub_ind_def(str(rexp),sub_ind_def(str(i_e),loop_var,variable),'('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')')
-					case_temp_inductivestep='Not('+str(lexp)+"=="+str(rexp)+')'
+					case_temp_inductivestep=str(lexp)+"!="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				
 							
