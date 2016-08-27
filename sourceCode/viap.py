@@ -3607,6 +3607,12 @@ def simplify_conclusion(conclusion,subs_list):
 		if 'ForAll' in conclusion:
 			arg_list=extract_args(conclusion)
 			return 'ForAll('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
+		elif 'Or' in conclusion:
+			arg_list=extract_args(conclusion)
+			return 'Or('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
+		elif 'And' in conclusion:
+			arg_list=extract_args(conclusion)
+			return 'And('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
 		elif 'Exists' in conclusion:
 			arg_list=extract_args(conclusion)
 			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
@@ -4235,7 +4241,7 @@ def translatepowerToFunCheck(expression):
 
 #expression="(A+B+((Z**(K)-1)/(Z-1))*(Z-1))"
 expression="((Z**(K)-1)/(Z-1))*(Z-1)"
-expression="(Z/2)*2<=Z"
+expression="(Z/2)*6<=Z"
 expression="r6(_n2)>=(((2**-(_n2))*((2**_N1)*B))/2)"
 #expressionChecking(expression)
 def expressionChecking(expression):
@@ -4283,5 +4289,3 @@ def expr2simplified(e,flag):
             return op +'('+ ','.join(list(trim_p(expr2string1(x)) for x in args))+ ')',flag
         	
 
-
-		
