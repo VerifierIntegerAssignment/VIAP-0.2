@@ -3604,18 +3604,25 @@ def construct_expression_normal(tree):
 
 def simplify_conclusion(conclusion,subs_list):
 	if conclusion is not None and conclusion!='':
-		if 'ForAll' in conclusion:
+		term=isFunction(conclusion)
+		if term is None:
+			return None
+		if 'ForAll' in conclusion and term=='ForAll':
 			arg_list=extract_args(conclusion)
 			return 'ForAll('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
-		elif 'Or' in conclusion:
+		elif 'Or' in conclusion and term=='Or':
 			arg_list=extract_args(conclusion)
 			return 'Or('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
-		elif 'And' in conclusion:
+		elif 'And' in conclusion and term=='And':
 			arg_list=extract_args(conclusion)
 			return 'And('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
-		elif 'Exists' in conclusion:
+		elif 'Exists' in conclusion and term=='Exists':
 			arg_list=extract_args(conclusion)
 			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
+		elif 'Implies' in conclusion and term=='Implies':
+			arg_list=extract_args(conclusion)
+			return 'And('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
+
 		else:
 			if '==' not in conclusion and '!=' not in conclusion:
 				modified_conclusion=conclusion
@@ -3892,7 +3899,8 @@ def tactic1(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints):
 	for conclusion in conclusions:
 		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
 		conclusion=simplify_conclusion(conclusion,subs_list)
-		
+		if conclusion is None:
+			return "Failed to Prove"
 		if "factorial" in conclusion:
 			cfact=eval("['factorial',1,['int','int']]")
 			vfact.append(cfact)
@@ -3916,6 +3924,8 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 		writeLogFile( "j2llogs.logs" , "\nSystem try to prove \n"+str(conclusion)+"\n" )
 		subs_list=eqset2subs_list(o)
 		conclusion=simplify_conclusion(conclusion,subs_list)
+		if conclusion is None:
+			return "Failed to Prove"
 		variable=None
 		constant=None
 		const_map={}
@@ -3991,6 +4001,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					invariantstmtdisplay_right=str(simplify(exp[1]).subs(constant,const_map[x]))
 					exp[1]=simplify(exp[1]).subs(constant,variable)
 				
+			
 				invariantstmtdisplay=invariantstmtdisplay_left+"=="+invariantstmtdisplay_right				
 				invariantstmt=str(exp[0])+"=="+str(exp[1])
 				if '/' in str(exp[0]):
@@ -4033,14 +4044,17 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=simplify(exp[1]).subs(variable,0)
 								
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
-			elif 'And(' not in str(conclusion) or 'Or(' not in str(conclusion):
+			elif 'And(' in str(conclusion) or 'Or(' in str(conclusion):
 				sub_list={}
-				sub_list[constant]=const_map[x]
-				invariantstmtdisplay=simplify_conclusion(conclusion,subs_list)
-				invariantstmt=conclusion
+				sub_list[constant]=variable
+				invariantstmt=simplify_conclusion(conclusion,sub_list)
+				sub_list={}
+				sub_list[constant]=const_map[x]	
+				invariantstmt=simplify_conclusion(invariantstmt,sub_list)
+				invariantstmtdisplay=simplify_conclusion(conclusion,sub_list)
 				sub_list={}
 				sub_list[variable]='0'
-				basecasestmt=simplify_conclusion(conclusion,subs_list)
+				basecasestmt=simplify_conclusion(conclusion,sub_list)
 			
 			else:
 				
@@ -4081,10 +4095,10 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				else:
 					exp[1]=simplify(exp[1]).subs(variable,0)
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
-			elif 'And(' not in str(invariantstmt) or 'Or(' not in str(invariantstmt):
+			elif 'And(' in str(invariantstmt) or 'Or(' in str(invariantstmt):
 				sub_list={}
 				sub_list[variable]='0'
-				basecasestmt=simplify_conclusion(invariantstmt,subs_list)			
+				basecasestmt=simplify_conclusion(invariantstmt,sub_list)			
 			else:
 				if '/' in str(basecasestmt):
 					basecasestmt=invariantstmt.replace(variable,'0')
@@ -4174,12 +4188,12 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					case_temp_inductivestep=str(lexp)+"!="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				
-				elif 'And(' not in str(invariantstmt) or 'Or(' not in str(invariantstmt):					
+				elif 'And(' in str(invariantstmt) or 'Or(' in str(invariantstmt):					
 					inductiveassum=invariantstmt
 					sub_list={}
 					for i_e in ind_def_map:
 						sub_list[sub_ind_def(str(i_e),loop_var,variable)]='('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')'
-					inductivestep=simplify_conclusion(invariantstmt,subs_list)
+					inductivestep=simplify_conclusion(invariantstmt,sub_list)
 				
 				else:
 					if '/' in str(invariantstmt):
@@ -4257,6 +4271,9 @@ def transferToFunctionRec(expression):
 	elif 'And' in expression:
 		arg_list=extract_args(expression)
 		return 'And('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
+	elif 'Implies' in expression:
+		arg_list=extract_args(expression)
+		return 'Implies('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
 	elif 'Exists' in expression:
 		arg_list=extract_args(expression)
 		return 'Exists('+arg_list[0]+','+transferToFunctionRec(arg_list[1])+')'
@@ -4343,3 +4360,59 @@ def expr2simplified(e,flag):
             return op +'('+ ','.join(list(trim_p(expr2string1(x)) for x in args))+ ')',flag
         	
 
+#Is Function and Return the name
+
+#expression="(A+B+((Z**(K)-1)/(Z-1))*(Z-1))"
+#expression="((((Z**(K)-1)/(Z-1))*(Z-1)))"
+
+#expression="ForAll(Y+1,Exits(X==Y))"
+
+#expression="(X<(Y+y))"
+#expression="Rest(Z,Exists(K,((((Z**(K)-1)/(Z-1))*(Z-1)))))"
+#expression="m1==((((Z**(K)-1)/(Z-1))*(Z-1)))"
+
+def isFunction(expression):
+	function=['ForAll','Or','And','Exists','Implies']
+	operators=['==','<=','>=','>','<','!=']
+	if 'ForAll' in expression or 'Or' in expression or 'And' in expression and 'Exists' in  expression or 'Implies' in expression:
+		arg_list=extract_args(expression)
+		arglist=""
+		for arg in arg_list:
+			if arglist=="":
+				arglist='('+arg
+			else:
+				arglist+=','+arg
+		arglist+=")"
+		tem_expression=expression.replace(arglist,'')
+		tem_expression=tem_expression.strip()
+		if tem_expression in function:
+			return tem_expression
+		else:
+			return None
+	else:
+		arg_list=extract_args(expression)
+		arglist=""
+		for arg in arg_list:
+			if arglist=="":
+				arglist='('+arg
+			else:
+				arglist+=','+arg
+		arglist+=")"
+		tem_expression=expression.replace(arglist,'')
+		tem_expression=tem_expression.strip()
+		if tem_expression=='':
+			return expression
+		else:
+			status=False
+			for operator in operators:
+				if operator in tem_expression:
+					status=True
+			if status==True:
+				return expression
+			else:
+				return None
+			
+		
+
+
+			
