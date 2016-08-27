@@ -3827,8 +3827,10 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 			pythonProgram+=")\n"
 	power_flag=False
 	for equation in constraint_list:
-		if 'power' in equation:
+		if '**' in equation:
 			power_flag=True
+	if '**' in conclusion:
+		power_flag=True
 	if power_flag==True:		
 		pythonProgram+="power=Function(\'power\',IntSort(),IntSort(),IntSort())\n"
 		pythonProgram+="_s=Solver()\n"
