@@ -3818,16 +3818,23 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 				else:
 					pythonProgram+=",RealSort()"
 			pythonProgram+=")\n"
-	pythonProgram+="power=Function(\'power\',IntSort(),IntSort(),IntSort())\n"
-	pythonProgram+="_s=Solver()\n"
-	#pythonProgram+="_s.add(ForAll(x,Implies(x>0,power(x, 0)==1)))\n"
-	#pythonProgram+="_s.add(ForAll([x,y],Implies(And(x>0,y>0),power(x, y)==power(x, y-1)*x)))\n"
-	#pythonProgram+="_s.set(mbqi=True)\n"
-        pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>=0, power(0,_p1)==0)))\n"
-        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p2,_p1)==0,_p2==0)))\n"
-        pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>0, power(_p1,0)==1)))\n"
-        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p1,_p2)==1,Or(_p1==1,_p2==0))))\n"
-        pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(And(_p1>0,_p2>=0), power(_p1,_p2+1)==power(_p1,_p2)*_p1)))\n"      
+	power_flag=False
+	for equation in constraint_list:
+		if 'power' in equation:
+			power_flag=True
+	if power_flag==True:		
+		pythonProgram+="power=Function(\'power\',IntSort(),IntSort(),IntSort())\n"
+		pythonProgram+="_s=Solver()\n"
+		#pythonProgram+="_s.add(ForAll(x,Implies(x>0,power(x, 0)==1)))\n"
+		#pythonProgram+="_s.add(ForAll([x,y],Implies(And(x>0,y>0),power(x, y)==power(x, y-1)*x)))\n"
+		#pythonProgram+="_s.set(mbqi=True)\n"
+        	pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>=0, power(0,_p1)==0)))\n"
+        	pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p2,_p1)==0,_p2==0)))\n"
+        	pythonProgram+="_s.add(ForAll([_p1],Implies(_p1>0, power(_p1,0)==1)))\n"
+        	pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(power(_p1,_p2)==1,Or(_p1==1,_p2==0))))\n"
+        	pythonProgram+="_s.add(ForAll([_p1,_p2],Implies(And(_p1>0,_p2>=0), power(_p1,_p2+1)==power(_p1,_p2)*_p1)))\n"  
+        else:
+        	pythonProgram+="_s=Solver()\n"
 
 
 	pythonProgram+="_s.set(\"timeout\","+str(TIMEOUT)+")\n"
@@ -3836,9 +3843,9 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 	finalProgram=pythonProgram
 	if 'Not(' in conclusion:
 		arg_list=extract_args(conclusion)
-		finalProgram+="_s.add(Not(Not("+str(translatepowerToFun(arg_list[0]))+")))\n"
+		finalProgram+="_s.add(Not(Not("+str(transferToFunctionRec(arg_list[0]))+")))\n"
 	else:
-		finalProgram+="_s.add(Not("+str(translatepowerToFun(conclusion))+"))\n"
+		finalProgram+="_s.add(Not("+str(transferToFunctionRec(conclusion))+"))\n"
 	finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tif os.path.isfile(\'j2llogs.logs\'):\n"+"\t\tfile = open(\'j2llogs.logs\', \'a\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\telse:\n"+"\t\tfile = open(\'j2llogs.logs\', \'w\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#print finalProgram
@@ -3848,6 +3855,12 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 	output = proc.stdout.read()
 	status=output
 	return status
+
+
+
+
+
+
 
 
 """
@@ -3948,6 +3961,9 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			else:
 				update_vfact.append([x,k,l])
 
+		if 'ForAll(' in conclusion or 'Exits' in conclusion:
+			return "Failed to Prove"
+		
 		for x in const_map:
 			variable=var_const_map[const_map[x]]			
 			constant=x
@@ -3958,7 +3974,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				#conclusion=conclusion.replace('==','!=')
 
 			
-			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion):
+			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion) and 'And(' not in str(conclusion) and 'Or(' not in str(conclusion):
 				exp=str(conclusion).split('==')
 				invariantstmtdisplay_left=None
 				invariantstmtdisplay_right=None
@@ -3988,7 +4004,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=simplify(exp[1]).subs(variable,0)
 					
 				basecasestmt=str(exp[0])+"=="+str(exp[1])
-			elif '!=' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and 'ite' not in str(conclusion):
+			elif '!=' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and 'ite' not in str(conclusion) and 'And(' not in str(conclusion) and 'Or(' not in str(conclusion):
 				exp=str(conclusion).split('!=')
 				invariantstmtdisplay_left=None
 				invariantstmtdisplay_right=None
@@ -4017,6 +4033,15 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=simplify(exp[1]).subs(variable,0)
 								
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
+			elif 'And(' not in str(conclusion) or 'Or(' not in str(conclusion):
+				sub_list={}
+				sub_list[constant]=const_map[x]
+				invariantstmtdisplay=simplify_conclusion(conclusion,subs_list)
+				invariantstmt=conclusion
+				sub_list={}
+				sub_list[variable]='0'
+				basecasestmt=simplify_conclusion(conclusion,subs_list)
+			
 			else:
 				
 				if '/' in str(conclusion):
@@ -4031,7 +4056,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			print " Try to prove following using induction on "+const_map[x]
 			print "ForAll("+const_map[x]+","+str(invariantstmtdisplay)+")"
 			print "Base Case"
-			if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
+			if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt) and 'And(' not in str(invariantstmt) and 'Or(' not in str(invariantstmt):
 				exp=str(invariantstmt).split('==')
 				if '/' in str(exp[0]):
 					exp[0]=exp[0].replace(variable,'0')
@@ -4044,7 +4069,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					exp[1]=simplify(exp[1]).subs(variable,0)
 				basecasestmt=str(exp[0])+"=="+str(exp[1])
 			
-			elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
+			elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and 'ite' not in str(invariantstmt) and 'And(' not in str(invariantstmt) and 'Or(' not in str(invariantstmt):
 				exp=str(invariantstmt).split('!=')
 				if '/' in str(exp[0]):
 					exp[0]=exp[0].replace(variable,'0')
@@ -4056,6 +4081,10 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				else:
 					exp[1]=simplify(exp[1]).subs(variable,0)
 				basecasestmt=str(exp[0])+"!="+str(exp[1])
+			elif 'And(' not in str(invariantstmt) or 'Or(' not in str(invariantstmt):
+				sub_list={}
+				sub_list[variable]='0'
+				basecasestmt=simplify_conclusion(invariantstmt,subs_list)			
 			else:
 				if '/' in str(basecasestmt):
 					basecasestmt=invariantstmt.replace(variable,'0')
@@ -4079,7 +4108,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				print invariantstmt
 				updated_equation=[]
 				updated_vfact=[]
-				if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt):
+				if '==' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt) and '!' not in str(invariantstmt) and 'ite' not in str(invariantstmt) and 'And(' not in str(invariantstmt) and 'Or(' not in str(invariantstmt):
 					exp=str(invariantstmt).split('==')
 					
 					lexp=None
@@ -4112,7 +4141,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					case_temp_inductivestep=str(lexp)+"=="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				
-				elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt)  and 'ite' not in str(invariantstmt):
+				elif '!=' in str(invariantstmt) and '<' not in  str(invariantstmt) and '>' not in str(invariantstmt)  and 'ite' not in str(invariantstmt) and 'And(' not in str(invariantstmt) and 'Or(' not in str(invariantstmt):
 					exp=str(invariantstmt).split('==')
 					
 					lexp=None
@@ -4145,7 +4174,13 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 					case_temp_inductivestep=str(lexp)+"!="+str(rexp)
 					inductivestep='Implies('+str(inductiveassum)+','+str(lexp)+"=="+str(rexp)+')'
 				
-							
+				elif 'And(' not in str(invariantstmt) or 'Or(' not in str(invariantstmt):					
+					inductiveassum=invariantstmt
+					sub_list={}
+					for i_e in ind_def_map:
+						sub_list[sub_ind_def(str(i_e),loop_var,variable)]='('+sub_ind_def(str(ind_def_map[i_e]),loop_var,variable)+')'
+					inductivestep=simplify_conclusion(invariantstmt,subs_list)
+				
 				else:
 					if '/' in str(invariantstmt):
 						inductiveassum=simplify_sympy(invariantstmt)
@@ -4208,6 +4243,25 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 				return "Failed to Prove"
 		return "Failed to Prove"
 
+
+
+#Recursive Function to ** to power Function
+
+def transferToFunctionRec(expression):
+	if 'ForAll' in expression:
+		arg_list=extract_args(expression)
+		return 'ForAll('+arg_list[0]+','+transferToFunctionRec(arg_list[1])+')'
+	elif 'Or' in expression:
+		arg_list=extract_args(expression)
+		return 'Or('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
+	elif 'And' in expression:
+		arg_list=extract_args(expression)
+		return 'And('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
+	elif 'Exists' in expression:
+		arg_list=extract_args(expression)
+		return 'Exists('+arg_list[0]+','+transferToFunctionRec(arg_list[1])+')'
+	else:
+		return translatepowerToFun(expression)
 #Stack Implementaion 
 
 class Stack:
