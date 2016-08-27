@@ -3609,27 +3609,52 @@ def simplify_conclusion(conclusion,subs_list):
 			return None
 		if 'ForAll' in conclusion and term=='ForAll':
 			arg_list=extract_args(conclusion)
-			return 'ForAll('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
+			result=simplify_conclusion(arg_list[1],subs_list)
+			if result is not None:
+				return 'ForAll('+arg_list[0]+','+result+')'
+			else:
+				return None
 		elif 'Or' in conclusion and term=='Or':
 			arg_list=extract_args(conclusion)
-			return 'Or('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
+			result1=simplify_conclusion(arg_list[0],subs_list)
+			result2=simplify_conclusion(arg_list[1],subs_list)
+			if result1 is not None and result2 is not None:
+				return 'Or('+result1+','+result2+')'
+			else:
+				return None
 		elif 'And' in conclusion and term=='And':
 			arg_list=extract_args(conclusion)
-			return 'And('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
+			result1=simplify_conclusion(arg_list[0],subs_list)
+			result2=simplify_conclusion(arg_list[1],subs_list)
+			if result1 is not None and result2 is not None:
+				return 'And('+result1+','+result2+')'
+			else:
+				return None
 		elif 'Exists' in conclusion and term=='Exists':
 			arg_list=extract_args(conclusion)
-			return 'Exists('+arg_list[0]+','+simplify_conclusion(arg_list[1],subs_list)+')'
+			result=simplify_conclusion(arg_list[1],subs_list) 
+			if result is not None:
+				return 'Exists('+arg_list[0]+','+result+')'
+			else:
+				return None
 		elif 'Implies' in conclusion and term=='Implies':
 			arg_list=extract_args(conclusion)
-			return 'And('+simplify_conclusion(arg_list[0],subs_list)+','+simplify_conclusion(arg_list[1],subs_list)+')'
+			result1=simplify_conclusion(arg_list[0],subs_list)
+			result2=simplify_conclusion(arg_list[1],subs_list)
+			if result1 is not None and result2 is not None:
+				return 'Implies('+result1+','+result2+')'
+			else:
+				return None
 
 		else:
 			if '==' not in conclusion and '!=' not in conclusion:
 				modified_conclusion=conclusion
 				for element in subs_list.keys():
 					modified_conclusion=str(modified_conclusion).replace(str(element),str(subs_list[element]))
-				conclusion=modified_conclusion
-				#conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
+				if '/' in modified_conclusion:
+					conclusion=modified_conclusion
+				else:
+					conclusion=str(pow_to_mul(powsimp(simplify_sympy(conclusion).subs(subs_list))))
 				return conclusion
 			elif '!=' in conclusion:
 				axm=conclusion.split('!=')
