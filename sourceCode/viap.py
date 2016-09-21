@@ -50,7 +50,6 @@ import datetime
 import ConfigParser
 from pyparsing import *
 from sympy.core.relational import Relational
-from pycparser import c_parser, c_ast, c_generator
 ParserElement.enablePackrat()
 
 
@@ -1978,7 +1977,11 @@ def simplify_sympy(expression):
 	
 	else:
 		#return str(sympify(expression).expand(basic=True))
-		return pow_to_mul(powsimp(sympify(expression).expand(basic=True)))
+		expressionTemp=sympify(expression).expand(basic=True)
+		if '/' in str(expressionTemp) and '/' not in str(expression):
+			return pow_to_mul(powsimp(sympify(expression)))
+		else:
+			return pow_to_mul(powsimp(sympify(expression).expand(basic=True)))
 	
 
 def substituteValue(expression,key,value):
@@ -3226,8 +3229,6 @@ flag=2
 
 #axiom=translate(file_name)
 
-#file_name='cohendiv.java'
-
 """
   
 def translate(file_name):
@@ -3410,7 +3411,6 @@ def translate(file_name):
                 	str_program=programToinductiveDefination(expressions , allvariable)
                 else:
                 	str_program=program_dec_start+','+programToinductiveDefination(expressions , allvariable)+program_dec_end
-                print str_program
                 program=eval(str_program)
                 #print ""
                 #print "Output of The Translator Written By Prof Lin"
@@ -3649,6 +3649,13 @@ def simplify_conclusion(conclusion,subs_list):
 				return 'Implies('+result1+','+result2+')'
 			else:
 				return None
+		elif 'Not' in conclusion and term=='Not':
+			arg_list=extract_args(conclusion)
+			result=simplify_conclusion(arg_list[0],subs_list) 
+			if result is not None:
+				return 'Not('+result+')'
+			else:
+				return None
 
 		else:
 			if '==' not in conclusion and '!=' not in conclusion:
@@ -3856,9 +3863,9 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 			pythonProgram+=")\n"
 	power_flag=False
 	for equation in constraint_list:
-		if '**' in equation:
+		if '**' in equation or 'power' in equation:
 			power_flag=True
-	if '**' in conclusion:
+	if '**' in conclusion or 'power' in conclusion:
 		power_flag=True
 	if power_flag==True:		
 		pythonProgram+="power=Function(\'power\',IntSort(),IntSort(),IntSort())\n"
@@ -3879,11 +3886,7 @@ def query2z3(constraint_list,conclusion,vfact,inputmap):
 	for equation in constraint_list:
 		pythonProgram+="_s.add("+str(equation)+")\n"
 	finalProgram=pythonProgram
-	if 'Not(' in conclusion:
-		arg_list=extract_args(conclusion)
-		finalProgram+="_s.add(Not(Not("+str(transferToFunctionRec(arg_list[0]))+")))\n"
-	else:
-		finalProgram+="_s.add(Not("+str(transferToFunctionRec(conclusion))+"))\n"
+	finalProgram+="_s.add(Not("+str(transferToFunctionRec(conclusion))+"))\n"
 	finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tif os.path.isfile(\'j2llogs.logs\'):\n"+"\t\tfile = open(\'j2llogs.logs\', \'a\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\telse:\n"+"\t\tfile = open(\'j2llogs.logs\', \'w\')\n"+"\t\tfile.write(\"\\n**************\\nProof Details\\n**************\\n\"+str(_s.proof().children())+\"\\n\")\n"+"\t\tfile.close()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#finalProgram+="if sat==_s.check():\n"+"\tprint \"Counter Example\"\n"+"\tprint _s.model()\n"+"elif unsat==_s.check():\n"+"\t_s.check()\n"+"\tprint \"Successfully Proved\"\n"+"else:\n"+"\tprint \"Failed To Prove\""
 	#print finalProgram
@@ -4009,10 +4012,7 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 			variable=var_const_map[const_map[x]]			
 			constant=x
 			loop_var=const_map[x]
-			if 'Not(' in conclusion:
-				arg_list=extract_args(conclusion)
-				conclusion=arg_list[0]
-				#conclusion=conclusion.replace('==','!=')
+
 
 			
 			if '==' in str(conclusion) and '<' not in  str(conclusion) and '>' not in str(conclusion) and '!' not in str(conclusion) and 'ite' not in str(conclusion) and 'And(' not in str(conclusion) and 'Or(' not in str(conclusion):
@@ -4293,21 +4293,56 @@ def tactic2(f,o,a,pre_condition,conclusions,vfact,inputmap,constaints,const_var_
 #Recursive Function to ** to power Function
 
 def transferToFunctionRec(expression):
-	if 'ForAll' in expression:
+	term=isFunction(expression)
+	if term is None:
+		return None
+
+	if 'ForAll' in expression and term=='ForAll':
 		arg_list=extract_args(expression)
-		return 'ForAll('+arg_list[0]+','+transferToFunctionRec(arg_list[1])+')'
-	elif 'Or' in expression:
+		result=transferToFunctionRec(arg_list[1])
+		if result is not None:
+			return 'ForAll('+arg_list[0]+','+result+')'
+		else:
+			return None
+	elif 'Or' in expression and term=='Or':
 		arg_list=extract_args(expression)
-		return 'Or('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
-	elif 'And' in expression:
+		result1=transferToFunctionRec(arg_list[0])
+		result2=transferToFunctionRec(arg_list[1])
+		if result1 is not None and result2 is not None:
+			return 'Or('+result1+','+result2+')'
+		else:
+			return None
+	elif 'And' in expression and term=='And':
 		arg_list=extract_args(expression)
-		return 'And('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
-	elif 'Implies' in expression:
+
+		result1=transferToFunctionRec(arg_list[0])
+		result2=transferToFunctionRec(arg_list[1])
+		if result1 is not None and result2 is not None:
+			return 'And('+result1+','+result2+')'
+		else:
+			return None
+	elif 'Implies' in expression and term=='Implies':
 		arg_list=extract_args(expression)
-		return 'Implies('+transferToFunctionRec(arg_list[0])+','+transferToFunctionRec(arg_list[1])+')'
-	elif 'Exists' in expression:
+		result1=transferToFunctionRec(arg_list[0])
+		result2=transferToFunctionRec(arg_list[1])
+		if result1 is not None and result2 is not None:
+			return 'Implies('+result1+','+result2+')'
+		else:
+			return None
+	elif 'Exists' in expression and term=='Exists':
 		arg_list=extract_args(expression)
-		return 'Exists('+arg_list[0]+','+transferToFunctionRec(arg_list[1])+')'
+		result=transferToFunctionRec(arg_list[1])
+		if result is not None:
+			return 'Exists('+arg_list[0]+','+result+')'
+		else:
+			return None
+	elif 'Not' in expression and term=='Not':
+		arg_list=extract_args(expression)
+		result=transferToFunctionRec(arg_list[0])
+		if result is not None:
+			return 'Not('+transferToFunctionRec(arg_list[0])+')'
+		else:
+			return None
 	else:
 		return translatepowerToFun(expression)
 #Stack Implementaion 
@@ -4403,9 +4438,10 @@ def expr2simplified(e,flag):
 #expression="m1==((((Z**(K)-1)/(Z-1))*(Z-1)))"
 
 def isFunction(expression):
-	function=['ForAll','Or','And','Exists','Implies']
+	function=['ForAll','Or','And','Exists','Implies','Not']
+
 	operators=['==','<=','>=','>','<','!=']
-	if 'ForAll' in expression or 'Or' in expression or 'And' in expression and 'Exists' in  expression or 'Implies' in expression:
+	if 'ForAll' in expression or 'Or' in expression or 'And' in expression or 'Exists' in  expression or 'Implies' in expression or 'Not' in expression:
 		arg_list=extract_args(expression)
 		arglist=""
 		for arg in arg_list:
@@ -4414,8 +4450,11 @@ def isFunction(expression):
 			else:
 				arglist+=','+arg
 		arglist+=")"
+		
+		
 		tem_expression=expression.replace(arglist,'')
 		tem_expression=tem_expression.strip()
+		
 		if tem_expression in function:
 			return tem_expression
 		else:
@@ -4442,457 +4481,7 @@ def isFunction(expression):
 				return expression
 			else:
 				return None
-
-
-#C parsing Function
-
-
-"""
-
-#C Function Class
-#Plain Python object to store Information about Function
-"""
-class cFunctionclass(object):
- 	def __init__(self, functionname, returnType , inputvar, localvar):
-        	self.functionname = functionname
-        	self.inputvar = inputvar
-        	self.returnType = returnType
-        	self.localvar = localvar
-        def getFunctionname(self):
-        	return self.methodname
-        def getreturnType(self):
-        	return self.returnType
-        def getInputvar(self):
-        	return self.inputvar
-        def getLocalvar(self):
-        	return self.localvar
-			    
-
-def testC():
-    text = r"""
-void sum(int M)
-{
-   int s,i;
-   int X=0;
-   i=0;
-   s=2*X+X+X/3;
-   while(i<M && M<i)
-	{
-		s=s+M;
-		i=i+1;
-					
-	}
-
-}
-"""
-    parser = c_parser.CParser()
-    ast = parser.parse(text, filename='<none>')
-    generator = c_generator.CGenerator()
-
-    function_decl = ast.ext[0].decl
-
-    print("Name of the Function")
-
-    print(function_decl.name)
-
-    print("Return Type")
-
-    print(function_decl.type.type.type.names[0])
-    
-    parametermap={}
-    
-    for param_decl in function_decl.type.args.params:
-	print('Arg name: %s' % param_decl.name)
-	print('Type:')
-	print(param_decl.type.type.names[0])
-	variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-        parametermap[param_decl.name]=variable
-    function_body = ast.ext[0].body
-    localvarmap=getVariables(function_body)
-    membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,localvarmap)
-    print "Function Name:"
-    print membermethod.getMethodname()
-    print "Return Type:"
-    print membermethod.getreturnType()
-    print "Input Variables:"
-    var_list="{"
-    for x in membermethod.getInputvar():
-        if membermethod.getInputvar()[x].getDimensions()>0:
-            var_list+=' '+x+':array'
-	else:
-	    var_list+=' '+x+':'+membermethod.getInputvar()[x].getVariableType()
-    var_list+='}'
-    print var_list
-    print "Local Variables:"
-    var_list="{"
-    for x in membermethod.getLocalvar():
-        if membermethod.getLocalvar()[x].getDimensions()>0:
-            var_list+=' '+x+':array'
-	else:
-            var_list+=' '+x+':'+membermethod.getLocalvar()[x].getVariableType()
-    var_list+='}'
-    print var_list
-    allvariable={}
-    for x in membermethod.getInputvar():
-        allvariable[x]=membermethod.getInputvar()[x]
-    for x in membermethod.getLocalvar():
-        allvariable[x]=membermethod.getLocalvar()[x]
-    #print getBody(function_body)
-    expressions=organizeStatementToObject_C(function_body.block_items)
-    primeStatement(expressions)
-    print programToinductiveDefination_C(expressions, allvariable)
-    #for expression in expressions:
-     #   print type(expression)
-
-
-#Get All Variables
-
-
-def getVariables(function_body):
-    localvarmap={}
-    for decl in function_body.block_items:
-        if type(decl) is c_ast.Decl:
-            var_type=None
-            initial_value=None
-            for child in decl.children():
-                print(decl.name)
-                if type(child[1].type) is c_ast.IdentifierType:
-                    var_type=child[1].type.names[0]
-		else:
-                    initial_value=child[1].value
-            variable=variableclass(decl.name, var_type,None,None,initial_value)
-            localvarmap[decl.name]=variable
-    return localvarmap
-
-
-
-
-
-"""
-
-Organization of AST 
-
-"""
-               
-def organizeStatementToObject_C(statements):
-	count=0
-	degree=0
-	expressions=[]
-	for statement in statements:
-                if type(statement) is c_ast.Assignment:
-			count=count+1
-			expression=expressionclass(statement, count, True,degree)
-			expressions.append(expression)
-                elif type(statement) is c_ast.While:
-                    blockexpressions=[]
-                    if statement.stmt is not None:
-                        degree=degree+1
-			count,blockexpressions=blockToExpressions_C(statement.stmt.block_items, degree, count)
-			degree=degree-1
-		    block=blockclass( blockexpressions, statement.cond, count , True, degree)
-		    expressions.append(block)
-		else:
-			if type(statement) is c_ast.If:
-				count,ifclass=ifclassCreator_C(statement, degree, count)
-				expressions.append(ifclass)
-					
-     	return expressions
-
-
-
-"""
-
-Conditionl Loop to a Array of Statement Compatible to Translator Program 
-IfClass Creator
-
-"""
-
-def ifclassCreator_C(statement, degree, count):
-        blockexpressions1=None
-	blockexpressions2=None
-	predicate=statement.cond
-	#print statement.iftrue.show()
-	#print statement.iffalse.show()
-        if statement.iftrue is not None:
-            count,blockexpressions1=blockToExpressions_C(statement.iftrue.block_items, degree, count)
-        if statement.iffalse is not None and type(statement.iffalse) is c_ast.If:
-            count,blockexpressions2=ifclassCreator_C(statement.iffalse, degree, count)
-        else:
-            count,blockexpressions2=blockToExpressions_C(statement.iffalse.block_items, degree, count)
-	ifclass=Ifclass(predicate, blockexpressions1, blockexpressions2, count ,True ,degree)
-	return count,ifclass
-
-
-
-"""
-
-Converting code block,while loop ,conditional expression and expression to corresponding Classes
-
-"""
-
-def blockToExpressions_C(body, degree, count):
-	expressions=[]
-	if body is not None:
-		for statement in body:
-                    if type(statement) is c_ast.Assignment:
-			count=count+1
-			expression=expressionclass(statement, count, True,degree)
-			expressions.append(expression)
-                    elif type(statement) is c_ast.While:
-                        blockexpressions=[]
-                        if statement.stmt is not None:
-                            degree=degree+1
-                            count,blockexpressions=blockToExpressions_C(statement.stmt.block_items, degree, count)
-                            degree=degree-1
-                        block=blockclass( blockexpressions, statement.cond, count , True, degree)
-                        expressions.append(block)
-                    else:
-			if type(statement) is c_ast.If:
-				count,ifclass=ifclassCreator_C(statement, degree, count)
-				expressions.append(ifclass)
-	return count,expressions
-
-
-
-
-"""
-
-Block of Statement to Array of Statement Compatible to Translator Program 
-
-"""
-def programToinductiveDefination_C(expressions, allvariable):
-	programsstart=""
-	programsend=""
-	statements=""
-	for expression in expressions:
-		if type(expression) is expressionclass:
-			if type(expression.getExpression()) is c_ast.Assignment:
-                                var=None
-                                if type(expression.getExpression().lvalue) is c_ast.ID:
-                                    var=expression.getExpression().lvalue.name 
-                                elif type(expression.getExpression().lvalue) is c_ast.Constant:
-                                    var=expression.getExpression().lvalue.value 
-				if expression.getIsPrime()==False:
-                                    if programsstart=="":
-                                        programsstart="['-1','seq',['-1','=',expres('"+str(var)+"'),"+str(expressionCreator_C(expression.getExpression().rvalue))+"]"
-                                        programsend="]"
-				    else:
-					programsstart+=",['-1','seq',['-1','=',expres('"+str(var)+"'),"+str(expressionCreator_C(expression.getExpression().rvalue))+"]"
-					programsend+="]"
-				else:
-                                    if programsstart=="":
-                                        programsstart+="['-1','=',expres('"+str(var)+"'),"+str(expressionCreator_C(expression.getExpression().rvalue))+"]"+programsend
-                                    else:
-                                        programsstart+=",['-1','=',expres('"+str(var)+"'),"+str(expressionCreator_C(expression.getExpression().rvalue))+"]"+programsend
-		elif type(expression) is blockclass:
-			predicatestmt="['-1','while',"+expressionCreator_C(expression.predicate)+","+programToinductiveDefination_C( expression.getExpression(), allvariable)+"]"
-			if expression.getIsPrime()==False:
-				if programsstart=="":
-					programsstart="['-1','seq',"+predicatestmt
-					programsend="]"
-				else:
-					programsstart+=",['-1','seq',"+predicatestmt
-					programsend+="]"
-			else:
-				programsstart+=","+predicatestmt+programsend
-		elif type(expression) is Ifclass:
-			condition=predicateCreator(expression.predicate)
-			expressionif=None
-			expressionelse=None
-			predicatestmt=""
-			if expression.getExpressionif() is not None:
-				expressionif=programToinductiveDefination( expression.getExpressionif(), allvariable)
-			if expression.getExpressionelse() is not None:
-				if type(expression.getExpressionelse()) is Ifclass:
-					#expressionelse=programToinductiveDefination( expression.getExpressionelse().getExpressionif(), allvariable)
-					expressionelse=programToinductiveDefinationIfElse( expression.getExpressionelse(), allvariable)
-				else:
-					expressionelse=programToinductiveDefination( expression.getExpressionelse(), allvariable)
-			if expressionif is not None and expressionelse is not None:
-                          	predicatestmt="['-1','if2',"+condition+","+expressionif+","+expressionelse+"]"
-			elif expressionif is not None and expressionelse is None:
-				predicatestmt="['-1','if1',"+condition+","+expressionif+"]"
-			if expression.getIsPrime()==False:
-				if programsstart=="":
-					programsstart="['-1','seq',"+predicatestmt
-					programsend="]"
-				else:
-					programsstart+=",['-1','seq',"+predicatestmt
-					programsend+="]"
-			else:
-				if programsstart=="":
-					programsstart=predicatestmt+programsend
-				else:
-					programsstart+=","+predicatestmt+programsend
-	if programsstart[0]==',':
-		programsstart=programsstart[1:]	
-	return programsstart
-
-
-
-
-"""
-
-Program Expression to a Array of Statement Compatible to Translator Program 
-
-"""
-
-def expressionCreator_C(statement):
-    expression=""
-    if type(statement) is c_ast.ID:
-        return "expres('"+statement.name+"')"
-    elif type(statement) is c_ast.Constant:
-        return "expres('"+statement.value+"')"
-    else:
-        expression="expres('"
-        expression+=statement.op
-        expression+="',["+expressionCreator_C(statement.left)
-        expression+=','+expressionCreator_C(statement.right)
-        expression+='])'
-        return expression
-
-
-
-
-
-#Construct Function Body
-
-def getBody(function_body):
-    stmt=''
-    for statement in function_body.block_items:
-        stmt=''
-        if type(statement) is c_ast.Assignment:
-		if type(statement.lvalue) is c_ast.ID:
-                    if stmt=='':
-                        stmt="['-1','=',expres('"+statement.lvalue.name+"'),"+constructCStmt(statement.rvalue)+"]"
-                    else:
-                        stmt=",['-1','=',expres('"+statement.lvalue.name+"'),"+constructCStmt(statement.rvalue)+"]"
-                elif type(statement.lvalue) is c_ast.Constant:
-                    if stmt=='':
-                        stmt="['-1','=',expres('"+statement.lvalue.value+"'),"+constructCStmt(statement.rvalue)+"]"
-                    else:
-                        stmt=",['-1','=',expres('"+statement.lvalue.value+"'),"+constructCStmt(statement.rvalue)+"]"
-        elif type(statement) is c_ast.While:
-            if stmt=='':
-                stmt="['-1','while',"+constructCStmt(statement.cond)+','+constructWhile(statement.stmt)+']'
-            else:
-                stmt=",['-1','while',"+constructCStmt(statement.cond)+','+constructWhile(statement.stmt)+']'
-        elif type(statement) is c_ast.If:
-            if statement.iftrue is not None and statement.iffalse is not None:
-                if type(statement.iffalse) is c_ast.Compound:
-                    if stmt=='':
-                        stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-                    else:
-                        stmt=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-                else:
-                    if stmt=='':
-                        stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-                    else:
-                        stmt=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-            else:
-                if stmt=='':
-                    stmt="['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-                else:
-                    stmt="['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-        print stmt
-        stmt=""
-    return stmt
-
-
-#Construct expression statement
-
-def constructCStmt(stmt):
-    if type(stmt) is c_ast.ID:
-        return "expres('"+stmt.name+"')"
-    elif type(stmt) is c_ast.Constant:
-        return "expres('"+stmt.value+"')"
-    else:
-        str="expres('"
-        str+=stmt.op
-        str+="',["+constructCStmt(stmt.left)
-        str+=','+constructCStmt(stmt.right)
-        str+='])'
-        return str
-
-
-
-#Construct While statement
-
-
-def constructWhile(block):
-    stmt=''
-    if type(block) is c_ast.Compound:
-        for statement in block.block_items:
-            stmt=''
-            if type(statement) is c_ast.Assignment:
-		if type(statement.lvalue) is c_ast.ID:
-                    if stmt=='':
-                        stmt="['-1','=',expres('"+statement.lvalue.name+"),"+constructCStmt(statement.rvalue)+"]"
-                    else:
-                        stmt=",['-1','=',expres('"+statement.lvalue.name+"),"+constructCStmt(statement.rvalue)+"]"
-                elif type(statement.lvalue) is c_ast.Constant:
-                    if stmt=='':
-                        stmt="['-1','=',expres('"+statement.lvalue.value+"),"+constructCStmt(statement.rvalue)+"]"
-                    else:
-                        stmt=",['-1','=',expres('"+statement.lvalue.value+"),"+constructCStmt(statement.rvalue)+"]"
-            elif type(statement) is c_ast.While:
-                if stmt=='':
-                    stmt="['-1','while',"+constructCStmt(statement.cond)+','+constructWhile(statement.stmt)+"]"
-                else:
-                    stmt=",['-1','while',"+constructCStmt(statement.cond)+','+constructWhile(statement.stmt)+"]"
-            elif type(statement) is c_ast.If:
-                if statement.iftrue is not None and statement.iffalse is not None:
-                    if type(statement.iffalse) is c_ast.Compound:
-                        if stmt=='':
-                            stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-                        else:
-                            stmt=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-                    else:
-                         if stmt=='':
-                            stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-                         else:
-                            stmt=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-                else:
-                    if stmt=='':
-                        stmt="['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-                    else:
-                        stmt=",['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-        print stmt
-        stmt=""
-    return stmt
-
-
-#Construct If statement 
-
-
-def constructIf(statement):
-    stmt=''
-    if statement.iftrue is not None and statement.iffalse is not None:
-        if type(statement.iffalse) is c_ast.Compound:
-            if stmt=='':
-                stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-            else:
-                stmt+=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructWhile(statement.iffalse)+"]"
-        else:
-            if stmt=='':
-                stmt="['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-            else:
-                stmt+=",['-1','if2',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+','+constructIf(statement.iffalse)+"]"
-    else:
-        if stmt=='':
-            stmt="['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-        else:
-            stmt+="['-1','if1',"+constructCStmt(statement.cond)+','+constructWhile(statement.iftrue)+"]"
-    return stmt
-
-
-
-    
-    
- 
-
-
-			    
+			
 		
 
 
