@@ -1,8 +1,0 @@
-#VSTTE 2008 Dafny
-
-
-file_name='benchmark/divDafny.java'
-axiom=translate(file_name)
-pre_condition=['X>=0','Y>0']
-post_condition=['r1>=0']
-prove(axiom,pre_condition,post_condition)
