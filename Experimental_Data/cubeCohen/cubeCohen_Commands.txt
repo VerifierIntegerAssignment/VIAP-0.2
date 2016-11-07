@@ -1,7 +1,0 @@
-#Cohen Cube
-
-file_name='benchmark/cubeCohen.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['m1==X**3']
-prove(axiom,pre_condition,post_condition)
