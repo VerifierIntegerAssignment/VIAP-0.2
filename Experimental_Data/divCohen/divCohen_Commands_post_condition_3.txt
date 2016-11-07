@@ -1,8 +1,0 @@
-
-#cohendivision
-
-file_name='benchmark/divCohen.java'
-axiom=translate(file_name)
-pre_condition=['X>=0','Y>0']
-post_condition=['r1>=0']
-prove(axiom,pre_condition,post_condition)
