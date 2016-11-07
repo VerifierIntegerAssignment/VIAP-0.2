@@ -1,9 +1,0 @@
-
-#Hardware Division
-
-file_name='benchmark/divHard.java'
-axiom=translate(file_name)
-
-pre_condition=['X>=0','Y>0']
-post_condition=['X==Y*q1+r1']
-prove(axiom,pre_condition,post_condition)
