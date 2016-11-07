@@ -1,7 +1,0 @@
-#Series 1+2+3+....
-
-file_name='benchmark/potSumm1.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==X*(X+1)/2']
-prove(axiom,pre_condition,post_condition)
