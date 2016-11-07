@@ -1,7 +1,0 @@
-#Series 1^10+2^10+3^10+....
-
-file_name='benchmark/potSumm10.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==(6*X**11+33*X**10+55*X**9-66*X**7+66*X**5-33*X**3+5*X)/66']
-prove(axiom,pre_condition,post_condition)
