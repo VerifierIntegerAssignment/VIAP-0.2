@@ -1,7 +1,0 @@
-# divisionbyKaldewaij
-
-file_name='benchmark/divKaldewaij.java'
-axiom=translate(file_name)
-pre_condition=['A>=0','B>0']
-post_condition=['r1>=0']
-prove(axiom,pre_condition,post_condition)
