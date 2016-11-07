@@ -3,5 +3,5 @@
 To get started, see the Quick Guide
 
 
-* [Quick Guide](https://github.com/VerifierIntegerAssignment/VIAP/blob/master/quick_guide.pdf)
+* [Quick Guide](https://github.com/VerifierIntegerAssignment/VIAP-0.2/blob/master/quick_guide.pdf)
 
