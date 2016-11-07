@@ -1,8 +1,0 @@
-#Square Root of Integer
-
-file_name='benchmark/sqrt.java'
-axiom=translate(file_name)
-
-pre_condition=['X>=0']
-post_condition=['(a1+1)**2>X']
-prove(axiom,pre_condition,post_condition)
