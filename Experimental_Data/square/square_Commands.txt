@@ -1,8 +1,0 @@
-#Square of a number
-
-file_name='benchmark/square.java'
-axiom=translate(file_name)
-
-pre_condition=['M>=0']
-post_condition=['s1==M**2']
-prove(axiom,pre_condition,post_condition)
