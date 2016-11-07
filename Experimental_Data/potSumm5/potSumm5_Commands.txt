@@ -1,7 +1,0 @@
-#Series 1^5+2^5+3^5+....
-
-file_name='benchmark/potSumm5.java'
-axiom=translate(file_name)
-pre_condition=['X>=0']
-post_condition=['sum1==(2*X**6+6*X**5+5*X**4-X**2)/12']
-prove(axiom,pre_condition,post_condition)
