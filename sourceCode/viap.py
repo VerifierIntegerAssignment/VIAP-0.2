@@ -4959,22 +4959,23 @@ def prove_auto_process(program):
 			witnessXml=program.getWitnessXmlMap()[name]
 			start_time=current_milli_time()
 			#writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Prove \n"+"\nParameters--\n"+"\n Pre Condition--"+str(pre_condition)+"\n Post Condition--"+str(post_condition)+"\n Strategy--Direct")
-			status=prove_assert_tactic1(axiom,witnessXml)
-			if "Successfully Proved" in status:
-				print "Successfully Proved"			
-			elif "Counter Example" in status:
-				print status
-			elif "Nothing To Prove" in status:
-				print 'No Assertion to Prove'
-			else:
-				#status=prove_assert_tactic2(axiom,witnessXml)
-		
-				if "Successfully Proved" in status:
-					print "Successfully Proved"			
-				elif "Counter Example" in status:
-					print status		
-				else:
-					print "Failed to Prove"
+			prove_assert_tactic1(axiom,witnessXml)
+			#status=prove_assert_tactic1(axiom,witnessXml)
+			#if "Successfully Proved" in status:
+			#	print "Successfully Proved"			
+			#elif "Counter Example" in status:
+			#	print status
+			#elif "Nothing To Prove" in status:
+			#	print 'No Assertion to Prove'
+			#else:
+			#	#status=prove_assert_tactic2(axiom,witnessXml)
+			#	
+			#	if "Successfully Proved" in status:
+			#		print "Successfully Proved"			
+			#	elif "Counter Example" in status:
+			#		print status		
+			#	else:
+			#		print "Failed to Prove"
 		end_time=current_milli_time()
 		print end_time-start_time
 			
@@ -5059,12 +5060,12 @@ def prove_assert_tactic1(axiom,witnessXml):
 			status=tactic1_update(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,temp_post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),witnessXml)
 			#status=tactic2_update(axiom.getFrame_axioms(),axiom.getOutput_equations(),axiom.getOther_axioms(),pre_condition,temp_post_condition,axiom.getVfact(),axiom.getInputvariable(),axiom.getConstraints(),axiom.getConst_var_map())
 			if "Successfully Proved" in status:
-				return "Successfully Proved"			
+				print "Successfully Proved"			
 			elif "Counter Example" in status:
-				return status
+				print status
 			else:
-				return "Failed to Prove"
-	return "Nothing To Prove"
+				print "Failed to Prove"
+	#print "Nothing To Prove"
 
 
 
@@ -6370,7 +6371,7 @@ def programTransformation(function_body):
 
 #file_name='mcmillan2006_true_unreach_call.c'
 
-def translate_backup(file_name):
+def translate(file_name):
 	if not(os.path.exists(file_name)): 
         	print "File not exits"
 		return
@@ -7027,630 +7028,6 @@ def prove_auto(file_name):
 
 
 
-def translate(file_name):
-	if not(os.path.exists(file_name)): 
-        	print "File not exits"
-		return
-
-	start_time=current_milli_time()
-	content=None
-	global new_variable
-	global fail_count
-	global error_count
-	global assume_count
-        global assert_count
-        global defineMap
-        global defineDetaillist
-        fail_count=0
-        error_count=0
-        assume_count=0
-        assert_count=0
-	with open(file_name) as f:
-		content = f.read()
-	content=comment_remover_file(content)
-	content=content.replace('\r','')
-	defineMap={}
-	content,defineMap=preProcessorHandling(content)
-	text = r""" """+content
-	parser = c_parser.CParser()
-	#ast = parse_file(file_name, use_cpp=True)
-	ast = parser.parse(text)
-        #ast.show()
-	generator = c_generator.CGenerator()
-	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Translate \n"+"\nParameters--\n File Name--"+file_name+"\n")
-	if ast is None:
-		print "Error present in code. Please verify you input file"
-	       	return
-	if len(ast.ext)==0:
-		print "Error present in code. Please verify you input file"
-	        return
-    	externalvarmap={}
-	functionvarmap={}
-	memberfunctionmap={}
-	axiomeMap={}
-	addition_array_map={}
-	function_vfact_map={}
-	witnessXml_map={}
-	
-    	counter=0        
-    	
-    	for e in ast.ext:
-    		if type(e) is c_ast.Decl:
-    			if type(e.type) is c_ast.FuncDecl:
-    				parametermap={}
-				function_decl=e
-				if function_decl.type.args is not None:
-					for param_decl in function_decl.type.args.params:
-						if param_decl.name is not None:
-				    			if type(param_decl.type) is c_ast.ArrayDecl:
-				    	    			degree=0
-				    	    			data_type,degree=getArrayDetails(param_decl,degree)
-								variable=variableclass(param_decl.name, data_type,None,degree,None)
-							else:
-								variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-        						parametermap[param_decl.name]=variable
-
-				membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,None,None,0,0)
-				functionvarmap[membermethod.getMethodname()]=membermethod
-
-    			elif type(e.type) is c_ast.TypeDecl:
-            			var_type=None
-            			initial_value=None
-            			for child in e.children():
-                			if type(child[1].type) is c_ast.IdentifierType:
-                    				var_type=child[1].type.names[0]
-					else:
-                    				initial_value=child[1].value
-            			variable=variableclass(e.name, var_type,None,None,initial_value)
-            			externalvarmap[e.name]=variable
-    		else:
-    			if type(e) is c_ast.FuncDef:
-    				parametermap={}
-    				function_decl=e.decl
-    				function_body = e.body
-    				statements=function_body.block_items
-    				statements=change_var_name(statements)
-    				function_body= c_ast.Compound(block_items=statements)
-    				localvarmap=getVariables(function_body)
-    				counter=counter+1
-    				if function_decl.type.args is not None:
-					for param_decl in function_decl.type.args.params:
-						if param_decl.name is not None:
-							if type(param_decl.type) is c_ast.ArrayDecl:
-								#print param_decl.show()
-								degree=0
-								data_type,degree=getArrayDetails(param_decl,degree)
-								variable=variableclass(param_decl.name, data_type,None,degree,None)
-							elif type(param_decl.type) is c_ast.PtrDecl:
-								stmt=pointerToArray(param_decl)
-								#print stmt.show()
-								if stmt is not None and type(stmt.type) is c_ast.ArrayDecl:
-									degree=0
-									data_type,degree=getArrayDetails(param_decl,degree)
-									variable=variableclass(stmt.name, data_type,None,degree,None)
-							
-									
-							else:				
-								variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-			    				parametermap[param_decl.name]=variable
-    				if function_decl.name in functionvarmap.keys():
-					membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,localvarmap,function_body,0,counter)
-					functionvarmap[function_decl.name]=membermethod
-				else:
-					if function_decl.type.args is not None:
-						for param_decl in function_decl.type.args.params:
-							if param_decl.name is not None:
-								if type(param_decl.type) is c_ast.ArrayDecl:
-									degree=0
-									data_type,degree=getArrayDetails(param_decl,degree)
-									variable=variableclass(param_decl.name, data_type,None,degree,None)
-								elif type(param_decl.type) is c_ast.PtrDecl:
-									stmt=pointerToArray(param_decl)
-									if stmt is not None and type(stmt.type) is c_ast.ArrayDecl:
-										degree=0
-										data_type,degree=getArrayDetails(param_decl,degree)
-										variable=variableclass(stmt.name, data_type,None,degree,None)
-								
-								else:	
-									variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-								parametermap[param_decl.name]=variable
-					membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,localvarmap,function_body,0,counter)
-					functionvarmap[membermethod.getMethodname()]=membermethod
-
-    	
-    	for medthod in functionvarmap.keys():
-                membermethod=functionvarmap[medthod]
-    		body=membermethod.getBody()
-
-    		if body is not None:                            
-                    statements=programTransformation(body)
-    		    body_comp = c_ast.Compound(block_items=statements)
-    		    localvarmap=getVariables(body_comp)
-    		    statements,localvarmap=addAllExtVariables(statements,externalvarmap,localvarmap)
-    		    
-   		    
-    		    body_comp = c_ast.Compound(block_items=statements)
-    		    membermethod.setBody(body_comp)
-    		    membermethod.setLocalvar(localvarmap)
-    		else:
-		    membermethod.setBody(None)
-    		    membermethod.setLocalvar(None)
-                    
-    	#program in intermediate form
-    	programeIF=[]
-
-    	programeIF.append('-1')
-    			
-    	programeIF.append('prog')
-
-    	programe_array=[]
-
-    	variables_list_map={}
-
-    	for medthod in functionvarmap.keys():
-    		membermethod=functionvarmap[medthod]
-    		body=membermethod.getBody()
-    		if body is not None:
-    			new_variable={}
-    			update_statements=[]
-    			   		
-	    		body_comp=body
-	    		
-	    		statements=body.block_items
-	    		
-    			membermethod.setBody(body_comp)
-    			
-    			localvarmap=getVariables(body_comp)
-    			
-    			for var in externalvarmap.keys():
-				variable=externalvarmap[var]
-				localvarmap[var]=variable
-    			
-    			membermethod.setLocalvar(localvarmap)
-    			membermethod=functionvarmap[medthod]
-    			    			
-    			function=[]
-    			
-    			function.append('-1')
-    			
-    			function.append('fun')    			
-    			
-    			functionName=[]
-    			
-    			allvariable={}
-    			
-    			for x in membermethod.getInputvar():
-				allvariable[x]=membermethod.getInputvar()[x]
-			for x in membermethod.getLocalvar():
-        			allvariable[x]=membermethod.getLocalvar()[x]
-    			if validationOfInput(allvariable)==True:
-				print "Please Rename variable Name {S,Q,N,in,is} to other Name"
-          			return
-    
-    			program,variablesarray,fname,iputmap,opvariablesarray=translate2IntForm(membermethod.getMethodname(),membermethod.getreturnType(),membermethod.getBody(),membermethod.getInputvar())
-
-		
-			functionName.append(fname)
-			
-			for var in iputmap:
-				functionName.append(str(var))
-				
-			function.append(functionName)
-			
-			function.append(program)
-
-			programe_array.append(function)
-		
-			variables_list_map[fname]=variablesarray
-			
-			addition_array=[]
-			
-			addition_array.append(iputmap)
-			
-			addition_array.append(allvariable)
-			
-			addition_array.append(opvariablesarray)
-			
-			addition_array_map[fname]=addition_array
-			
-			memberfunctionmap[fname]=membermethod
-                        
-                        
-			
-			function_vfact_list=[]
-			function_vfact=[]
-			function_vfact.append(fname)
-			function_vfact.append(len(iputmap))
-			parameters_type=[]
-			parameters_type.append(membermethod.getreturnType())
-			for x in defineDetaillist:
-				#print x
-				function_vfact_list.append(x)
-					
-			
-			defineDetaillist=[]
-			for element in iputmap.keys():
-				variable=iputmap[element]
-				if variable is not None:
-					parameters_type.append(variable.getVariableType())
-			function_vfact.append(parameters_type)
-			function_vfact_list.append(function_vfact)
-			function_vfact_map[fname]=function_vfact_list	
-                        
-                        resultfunction='__VERIFIER_nondet_int'
-                        
-                        filename=file_name
-                        functionname=functionName
-                        
-                        witnessXml=getWitness(filename,fname,resultfunction)
-                        witnessXml_map[fname]= witnessXml      	
-      
-        
-        programeIF.append(programe_array)
-        #print '##################' 
-        #print programe_array
-        #print '##################' 
-        #print variables_list_map
-        #print '##################'               
-        f_map,o_map,a_map,cm_map,assert_map,assume_map=translate1(programeIF,variables_list_map,1)
-        
-        if type(f_map) is dict and type(o_map) is dict and type(a_map) is dict and type(cm_map) is dict:
-                for key in f_map.keys():
-        		f=f_map[key]
-        		o=o_map[key]
-        		a=a_map[key]
-        		cm=cm_map[key]
-        		assert_list=assert_map[key]
-        		assume_list=assume_map[key]
-        		addition_array=addition_array_map[key]
-        		vfacts,constraints=getVariFunDetails(f,o,a,addition_array[1],addition_array[2])
-        		
-		
-        		var_map={}
-			eqset2stringvfact(f,var_map)
-			eqset2stringvfact(o,var_map)
-			for x in a: 
-        			wff2stringvfact(x,var_map)
-        		for x in assert_list:
-        			wff2stringvfact(x,var_map)
-        		for x in assume_list:
-        			wff2stringvfact(x,var_map)
-        		for element1 in  var_map.keys():
-        			flag=False
-        			for element2 in vfacts:
-        				if element2[0]==element1:
-        					flag=True
-				if flag==False and isArrayFunction( element1 )==False:
-					vfact=[]
-					if element1=='_x1':
-						var_arr_list=[]
-						var_arr_list.append('array')
-						vfact.append(element1)
-						vfact.append(len(var_map[element1])-1)
-						vfact.append(var_arr_list)
-						vfacts.append(vfact)
-					
-					else:
-						vfact.append(element1)
-						vfact.append(len(var_map[element1])-1)
-						vfact.append(var_map[element1])
-						vfacts.append(vfact)
-       			
-        		
-        		for element in function_vfact_map.keys():
-        			function_vfact_list=function_vfact_map[element]
-        			for x in function_vfact_list:
-        				vfacts.append(x)
-        		
-			
-        		axiom=axiomclass(f,o,a,membermethod.getInputvar(), vfacts, constraints,cm,assert_list,assume_list)
-        		axiomeMap[key]=axiom
-                program=programclass(file_name, memberfunctionmap , externalvarmap, axiomeMap, witnessXml_map)              
-         
-                #prove_auto_process(program)
-                return program
-        else:
-        	print 'Error in  Translation'
-                return None
-
-
-
-
-
-
-
-
-
-
-
-def translate2IM(file_name):
-	if not(os.path.exists(file_name)): 
-        	print "File not exits"
-		return
-
-	start_time=current_milli_time()
-	content=None
-	global new_variable
-	global fail_count
-	global error_count
-	global assume_count
-        global assert_count
-        global defineMap
-        global defineDetaillist
-        fail_count=0
-        error_count=0
-        assume_count=0
-        assert_count=0
-	with open(file_name) as f:
-		content = f.read()
-	content=comment_remover_file(content)
-	content=content.replace('\r','')
-	defineMap={}
-	content,defineMap=preProcessorHandling(content)
-	text = r""" """+content
-	parser = c_parser.CParser()
-	#ast = parse_file(file_name, use_cpp=True)
-	ast = parser.parse(text)
-        #ast.show()
-	generator = c_generator.CGenerator()
-	writeLogFile( "j2llogs.logs" , getTimeStamp()+"\nCommand--Translate \n"+"\nParameters--\n File Name--"+file_name+"\n")
-	if ast is None:
-		print "Error present in code. Please verify you input file"
-	       	return
-	if len(ast.ext)==0:
-		print "Error present in code. Please verify you input file"
-	        return
-    	externalvarmap={}
-	functionvarmap={}
-	memberfunctionmap={}
-	axiomeMap={}
-	addition_array_map={}
-	function_vfact_map={}
-	witnessXml_map={}
-	
-    	counter=0        
-    	
-    	for e in ast.ext:
-    		if type(e) is c_ast.Decl:
-    			if type(e.type) is c_ast.FuncDecl:
-    				parametermap={}
-				function_decl=e
-				if function_decl.type.args is not None:
-					for param_decl in function_decl.type.args.params:
-						if param_decl.name is not None:
-				    			if type(param_decl.type) is c_ast.ArrayDecl:
-				    	    			degree=0
-				    	    			data_type,degree=getArrayDetails(param_decl,degree)
-								variable=variableclass(param_decl.name, data_type,None,degree,None)
-							else:
-								variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-        						parametermap[param_decl.name]=variable
-
-				membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,None,None,0,0)
-				functionvarmap[membermethod.getMethodname()]=membermethod
-
-    			elif type(e.type) is c_ast.TypeDecl:
-            			var_type=None
-            			initial_value=None
-            			for child in e.children():
-                			if type(child[1].type) is c_ast.IdentifierType:
-                    				var_type=child[1].type.names[0]
-					else:
-                    				initial_value=child[1].value
-            			variable=variableclass(e.name, var_type,None,None,initial_value)
-            			externalvarmap[e.name]=variable
-    		else:
-    			if type(e) is c_ast.FuncDef:
-    				parametermap={}
-    				function_decl=e.decl
-    				function_body = e.body
-    				statements=function_body.block_items
-    				statements=change_var_name(statements)
-    				function_body= c_ast.Compound(block_items=statements)
-    				localvarmap=getVariables(function_body)
-    				counter=counter+1
-    				if function_decl.type.args is not None:
-					for param_decl in function_decl.type.args.params:
-						if param_decl.name is not None:
-							if type(param_decl.type) is c_ast.ArrayDecl:
-								#print param_decl.show()
-								degree=0
-								data_type,degree=getArrayDetails(param_decl,degree)
-								variable=variableclass(param_decl.name, data_type,None,degree,None)
-							elif type(param_decl.type) is c_ast.PtrDecl:
-								stmt=pointerToArray(param_decl)
-								#print stmt.show()
-								if stmt is not None and type(stmt.type) is c_ast.ArrayDecl:
-									degree=0
-									data_type,degree=getArrayDetails(param_decl,degree)
-									variable=variableclass(stmt.name, data_type,None,degree,None)
-							
-									
-							else:				
-								variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-			    				parametermap[param_decl.name]=variable
-    				if function_decl.name in functionvarmap.keys():
-					membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,localvarmap,function_body,0,counter)
-					functionvarmap[function_decl.name]=membermethod
-				else:
-					if function_decl.type.args is not None:
-						for param_decl in function_decl.type.args.params:
-							if param_decl.name is not None:
-								if type(param_decl.type) is c_ast.ArrayDecl:
-									degree=0
-									data_type,degree=getArrayDetails(param_decl,degree)
-									variable=variableclass(param_decl.name, data_type,None,degree,None)
-								elif type(param_decl.type) is c_ast.PtrDecl:
-									stmt=pointerToArray(param_decl)
-									if stmt is not None and type(stmt.type) is c_ast.ArrayDecl:
-										degree=0
-										data_type,degree=getArrayDetails(param_decl,degree)
-										variable=variableclass(stmt.name, data_type,None,degree,None)
-								
-								else:	
-									variable=variableclass(param_decl.name, param_decl.type.type.names[0],None,None,None)
-								parametermap[param_decl.name]=variable
-					membermethod=membermethodclass(function_decl.name,function_decl.type.type.type.names[0],parametermap,localvarmap,function_body,0,counter)
-					functionvarmap[membermethod.getMethodname()]=membermethod
-
-    	
-    	for medthod in functionvarmap.keys():
-                membermethod=functionvarmap[medthod]
-    		body=membermethod.getBody()
-
-    		if body is not None:                            
-                    statements=programTransformation(body)
-    		    body_comp = c_ast.Compound(block_items=statements)
-    		    localvarmap=getVariables(body_comp)
-    		    statements,localvarmap=addAllExtVariables(statements,externalvarmap,localvarmap)
-    		    
-   		    
-    		    body_comp = c_ast.Compound(block_items=statements)
-    		    membermethod.setBody(body_comp)
-    		    membermethod.setLocalvar(localvarmap)
-    		else:
-		    membermethod.setBody(None)
-    		    membermethod.setLocalvar(None)
-                    
-    	#program in intermediate form
-    	programeIF=[]
-
-    	programeIF.append('-1')
-    			
-    	programeIF.append('prog')
-
-    	programe_array=[]
-
-    	variables_list_map={}
-
-    	for medthod in functionvarmap.keys():
-    		membermethod=functionvarmap[medthod]
-    		body=membermethod.getBody()
-    		if body is not None:
-    			new_variable={}
-    			update_statements=[]
-    			   		
-	    		body_comp=body
-	    		
-	    		statements=body.block_items
-	    		
-    			membermethod.setBody(body_comp)
-    			
-    			localvarmap=getVariables(body_comp)
-    			
-    			for var in externalvarmap.keys():
-				variable=externalvarmap[var]
-				localvarmap[var]=variable
-    			
-    			membermethod.setLocalvar(localvarmap)
-    			membermethod=functionvarmap[medthod]
-    			    			
-    			function=[]
-    			
-    			function.append('-1')
-    			
-    			function.append('fun')    			
-    			
-    			functionName=[]
-    			
-    			allvariable={}
-    			
-    			for x in membermethod.getInputvar():
-				allvariable[x]=membermethod.getInputvar()[x]
-			for x in membermethod.getLocalvar():
-        			allvariable[x]=membermethod.getLocalvar()[x]
-    			if validationOfInput(allvariable)==True:
-				print "Please Rename variable Name {S,Q,N,in,is} to other Name"
-          			return
-    
-    			program,variablesarray,fname,iputmap,opvariablesarray=translate2IntForm(membermethod.getMethodname(),membermethod.getreturnType(),membermethod.getBody(),membermethod.getInputvar())
-                        
-                        print 'Internal Program Representation'
-                        
-                        print 'Variables'
-                        print
-                        print variablesarray
-                        print 'Program'
-                        print
-                        print program
-		
-			functionName.append(fname)
-			
-			for var in iputmap:
-				functionName.append(str(var))
-				
-			function.append(functionName)
-			
-			function.append(program)
-
-			programe_array.append(function)
-		
-			variables_list_map[fname]=variablesarray
-			
-			addition_array=[]
-			
-			addition_array.append(iputmap)
-			
-			addition_array.append(allvariable)
-			
-			addition_array.append(opvariablesarray)
-			
-			addition_array_map[fname]=addition_array
-			
-			memberfunctionmap[fname]=membermethod
-                        
-                        
-			
-			function_vfact_list=[]
-			function_vfact=[]
-			function_vfact.append(fname)
-			function_vfact.append(len(iputmap))
-			parameters_type=[]
-			parameters_type.append(membermethod.getreturnType())
-			for x in defineDetaillist:
-				#print x
-				function_vfact_list.append(x)
-					
-			
-			defineDetaillist=[]
-			for element in iputmap.keys():
-				variable=iputmap[element]
-				if variable is not None:
-					parameters_type.append(variable.getVariableType())
-			function_vfact.append(parameters_type)
-			function_vfact_list.append(function_vfact)
-			function_vfact_map[fname]=function_vfact_list	
-                        
-                        resultfunction='__VERIFIER_nondet_int'
-                        
-                        filename=file_name
-                        functionname=functionName
-                        
-                        witnessXml=getWitness(filename,fname,resultfunction)
-                        witnessXml_map[fname]= witnessXml      	
-      
-        
-        programeIF.append(programe_array)
-        print 'Final Input To Translator'
-        print 
-        print 'Parameter One'
-        print  programeIF
-        print 'Parameter Two'
-        print variables_list_map
-        
-        
-        
-
-
-
-
-
-
-
-
-
-
-
 
 def translate2IntForm(function_name,function_type,function_body,parametermap):
     if function_body is None: 
@@ -7960,8 +7337,8 @@ def getVariables(function_body):
             var_type=None
             initial_value=None
             if type(decl.type) is c_ast.ArrayDecl:
-                if checkingArrayName(decl.type)==True:
-                    decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=renameArrayName(decl.type), init=decl.init, bitsize=decl.bitsize)
+                if is_number(decl.type.type.declname[-1])==True :
+                    decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=decl.type.type.declname+'_var', quals=decl.type.type.quals, type=decl.type.type.type), dim=decl.type.dim, dim_quals=decl.type.dim_quals), init=decl.init, bitsize=decl.bitsize)
             else:
                 if is_number(decl.type.declname[-1])==True :
                     decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=c_ast.TypeDecl(declname=decl.type.declname+'_var', quals=decl.type.quals, type=decl.type.type), init=decl.init, bitsize=decl.bitsize)
@@ -11889,14 +11266,16 @@ def extractAssert(assert_list,cm):
 				if update_stmt[0]=='s0':
 					temp=expr2string1(update_stmt[1])
 					if '<' in temp or '>' in temp or '=' in temp:
-						update_assert_stmts.append(update_stmt)
+						if temp.find('_PROVE')<=0:
+							update_assert_stmts.append(update_stmt)
 				else:
 					update_assert_stmts.append(update_stmt)
 		else:
 			if stmt[0]=='s0':
 				temp=expr2string1(stmt[1])
 				if '<' in temp or '>' in temp or '=' in temp:
-					update_assert_stmts.append(stmt)
+					if temp.find('_PROVE')<=0:
+						update_assert_stmts.append(stmt)
 			else:
 				update_assert_stmts.append(stmt)
 			
@@ -12715,8 +12094,10 @@ def change_var_name(statements):
 	for statement in statements:
 		if type(statement) is c_ast.Decl:
 			if type(statement.type) is c_ast.ArrayDecl:
-                                if checkingArrayName(statement.type)==True:
-                                    statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=renameArrayName(statement.type), init=statement.init, bitsize=statement.bitsize)
+				if is_number(statement.type.type.declname[-1])==True:
+					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
+				elif statement.type.type.declname in ['S','Q','N','in','is']:
+					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
 			else:
 				if is_number(statement.type.declname[-1])==True:
 					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type), init=statement.init, bitsize=statement.bitsize)
@@ -12812,13 +12193,7 @@ def change_var_name_stmt(statement):
 		else:
 			return statement
 	else:
-		if type(statement) is c_ast.ArrayRef:
-                    if checkingArrayName(statement)==True:
-                        return renameArrayName(statement)
-                    else:
-                        return statement
-                else:
-                    return statement
+		return statement
 
 
 
@@ -12871,51 +12246,8 @@ def getWitness(filename,functionname,resultfunction):
 	witnessXml.append(filename)
 	return witnessXml
 	
-def checkingArrayName(statement):
-    if type(statement) is c_ast.ArrayDecl:
-        if type(statement.type) is c_ast.TypeDecl:
-            if is_number(statement.type.declname[-1])==True:
-                #statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
-                return True
-            elif statement.type.declname in ['S','Q','N','in','is']:
-                #statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
-                return True
-            else:
-                return False
-        elif type(statement.type) is c_ast.ArrayDecl:
-            return checkingArrayName(statement.type)
-    elif type(statement) is c_ast.ArrayRef:
-        if type(statement.name) is c_ast.ID:
-            if is_number(statement.name.name[-1])==True:
-                return True
-            elif statement.name.name in ['S','Q','N','in','is']:
-                return True
-            else:
-                False
-        elif type(statement.name) is c_ast.ArrayRef:
-            return checkingArrayName(statement.name)
-            
-def renameArrayName(statement):
-    if type(statement) is c_ast.ArrayDecl:
-        if type(statement.type) is c_ast.TypeDecl:
-            if is_number(statement.type.declname[-1])==True:
-                statement=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type),dim=statement.dim, dim_quals=statement.dim_quals)
-                return statement
-            elif statement.type.declname in ['S','Q','N','in','is']:
-                statement=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type),dim=statement.dim, dim_quals=statement.dim_quals)
-                return statement
-            else:
-                return statement
-        elif type(statement.type) is c_ast.ArrayDecl:
-            statement=c_ast.ArrayDecl(type=renameArrayName(statement.type),dim=statement.type.dim, dim_quals=statement.type.dim_quals)
-            return statement
-    elif type(statement) is c_ast.ArrayRef:
-        if type(statement.name) is c_ast.ID:
-            return c_ast.ArrayRef(name=c_ast.ID(name=statement.name.name+'_var'),subscript=statement.subscript)
-        elif type(statement.name) is c_ast.ArrayRef:
-            return c_ast.ArrayRef(name=renameArrayName(statement.name),subscript=statement.subscript)
-        
 
+	
  
  
 
