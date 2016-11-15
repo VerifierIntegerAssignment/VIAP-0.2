@@ -7610,12 +7610,11 @@ def getVariables(function_body):
             var_type=None
             initial_value=None
             if type(decl.type) is c_ast.ArrayDecl:
-                if is_number(decl.type.type.declname[-1])==True :
-                    decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=decl.type.type.declname+'_var', quals=decl.type.type.quals, type=decl.type.type.type), dim=decl.type.dim, dim_quals=decl.type.dim_quals), init=decl.init, bitsize=decl.bitsize)
+                if checkingArrayName(decl.type)==True:
+                    decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=renameArrayName(decl.type), init=decl.init, bitsize=decl.bitsize)
             else:
                 if is_number(decl.type.declname[-1])==True :
                     decl=c_ast.Decl(name=decl.name+'_var', quals=decl.quals, storage=decl.storage, funcspec=decl.funcspec, type=c_ast.TypeDecl(declname=decl.type.declname+'_var', quals=decl.type.quals, type=decl.type.type), init=decl.init, bitsize=decl.bitsize)
-
 
 
             if type(decl.type) is c_ast.ArrayDecl:
@@ -12362,15 +12361,14 @@ def ref2function(statement):
 
 
 
+
 def change_var_name(statements):
 	update_statements=[]
 	for statement in statements:
 		if type(statement) is c_ast.Decl:
 			if type(statement.type) is c_ast.ArrayDecl:
-				if is_number(statement.type.type.declname[-1])==True:
-					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
-				elif statement.type.type.declname in ['S','Q','N','in','is']:
-					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
+                                if checkingArrayName(statement.type)==True:
+                                    statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=renameArrayName(statement.type), init=statement.init, bitsize=statement.bitsize)
 			else:
 				if is_number(statement.type.declname[-1])==True:
 					statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type), init=statement.init, bitsize=statement.bitsize)
@@ -12466,7 +12464,13 @@ def change_var_name_stmt(statement):
 		else:
 			return statement
 	else:
-		return statement
+		if type(statement) is c_ast.ArrayRef:
+                    if checkingArrayName(statement)==True:
+                        return renameArrayName(statement)
+                    else:
+                        return statement
+                else:
+                    return statement
 
 
 
@@ -12522,7 +12526,7 @@ def getWitness(filename,functionname,resultfunction):
 
 	
  
- def checkingArrayName(statement):
+def checkingArrayName(statement):
     if type(statement) is c_ast.ArrayDecl:
         if type(statement.type) is c_ast.TypeDecl:
             if is_number(statement.type.declname[-1])==True:
