@@ -12522,7 +12522,49 @@ def getWitness(filename,functionname,resultfunction):
 
 	
  
- 
+ def checkingArrayName(statement):
+    if type(statement) is c_ast.ArrayDecl:
+        if type(statement.type) is c_ast.TypeDecl:
+            if is_number(statement.type.declname[-1])==True:
+                #statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
+                return True
+            elif statement.type.declname in ['S','Q','N','in','is']:
+                #statement=c_ast.Decl(name=statement.name+'_var', quals=statement.quals, storage=statement.storage, funcspec=statement.funcspec, type=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.type.declname+'_var', quals=statement.type.type.quals, type=statement.type.type.type), dim=statement.type.dim, dim_quals=statement.type.dim_quals), init=statement.init, bitsize=statement.bitsize)
+                return True
+            else:
+                return False
+        elif type(statement.type) is c_ast.ArrayDecl:
+            return checkingArrayName(statement.type)
+    elif type(statement) is c_ast.ArrayRef:
+        if type(statement.name) is c_ast.ID:
+            if is_number(statement.name.name[-1])==True:
+                return True
+            elif statement.name.name in ['S','Q','N','in','is']:
+                return True
+            else:
+                False
+        elif type(statement.name) is c_ast.ArrayRef:
+            return checkingArrayName(statement.name)
+            
+def renameArrayName(statement):
+    if type(statement) is c_ast.ArrayDecl:
+        if type(statement.type) is c_ast.TypeDecl:
+            if is_number(statement.type.declname[-1])==True:
+                statement=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type),dim=statement.dim, dim_quals=statement.dim_quals)
+                return statement
+            elif statement.type.declname in ['S','Q','N','in','is']:
+                statement=c_ast.ArrayDecl(type=c_ast.TypeDecl(declname=statement.type.declname+'_var', quals=statement.type.quals, type=statement.type.type),dim=statement.dim, dim_quals=statement.dim_quals)
+                return statement
+            else:
+                return statement
+        elif type(statement.type) is c_ast.ArrayDecl:
+            statement=c_ast.ArrayDecl(type=renameArrayName(statement.type),dim=statement.type.dim, dim_quals=statement.type.dim_quals)
+            return statement
+    elif type(statement) is c_ast.ArrayRef:
+        if type(statement.name) is c_ast.ID:
+            return c_ast.ArrayRef(name=c_ast.ID(name=statement.name.name+'_var'),subscript=statement.subscript)
+        elif type(statement.name) is c_ast.ArrayRef:
+            return c_ast.ArrayRef(name=renameArrayName(statement.name),subscript=statement.subscript)
 
 
  
